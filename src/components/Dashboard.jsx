@@ -1,7 +1,9 @@
 import React from 'react';
 import SummaryCard from './SummaryCard';
+import { motion } from 'framer-motion';
+import PatientList from './PatientList';
 
-const Dashboard = () => {
+const Dashboard = ({ onNavigate }) => {
     const stats = [
         { title: 'Active Patients', value: '142', subtext: '+4 since yesterday', type: 'normal' },
         { title: 'Critical Alerts', value: '3', subtext: 'Requires immediate attention', type: 'alert' },
@@ -9,62 +11,97 @@ const Dashboard = () => {
         { title: 'Reports Pending', value: '8', subtext: 'Review needed by Friday', type: 'normal' },
     ];
 
+    const containerVariants = {
+        hidden: { opacity: 0 },
+        visible: {
+            opacity: 1,
+            transition: {
+                staggerChildren: 0.1,
+                delayChildren: 0.2
+            }
+        }
+    };
+
+    const itemVariants = {
+        hidden: { opacity: 0, y: 20 },
+        visible: {
+            opacity: 1,
+            y: 0,
+            transition: {
+                type: 'spring',
+                stiffness: 300,
+                damping: 24
+            }
+        }
+    };
+
     return (
-        <main style={styles.main}>
-            <header style={styles.header}>
+        <motion.main
+            style={styles.main}
+            initial="hidden"
+            animate="visible"
+            exit={{ opacity: 0, transition: { duration: 0.2 } }}
+            variants={containerVariants}
+        >
+            <motion.header style={styles.header} variants={itemVariants}>
                 <h1 style={styles.title}>Patient Overview</h1>
                 <div style={styles.actions}>
-                    {/* Minimalist action */}
-                    <button style={styles.buttonPrimary}>+ New Patient</button>
+                    <motion.button
+                        style={styles.buttonPrimary}
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                    >
+                        + New Patient
+                    </motion.button>
                 </div>
-            </header>
+            </motion.header>
 
-            <section style={styles.grid}>
+            <motion.section style={styles.grid} layout>
                 {stats.map((stat, index) => (
-                    <div key={index} style={styles.gridItem}>
+                    <motion.div
+                        key={index}
+                        style={styles.gridItem}
+                        variants={itemVariants}
+                        layout
+                        whileHover={{
+                            scale: 1.01,
+                            borderColor: "#1A1A1A",
+                            transition: { duration: 0.3 }
+                        }}
+                    >
                         <SummaryCard
                             title={stat.title}
                             value={stat.value}
                             subtext={stat.subtext}
                             type={stat.type}
                         />
-                    </div>
+                    </motion.div>
                 ))}
-            </section>
+            </motion.section>
 
-            {/* Bento box placeholder content */}
-            <section style={styles.bentoSection}>
-                <div style={styles.bentoCardLarge}>
-                    <h3 style={styles.cardTitle}>Activity Feed</h3>
-                    <p style={styles.cardEmpty}>No recent activity to display.</p>
-                </div>
-                <div style={styles.bentoCardSmall}>
-                    <h3 style={styles.cardTitle}>System Status</h3>
-                    <div style={styles.statusIndicator}>
-                        <span style={styles.dot}></span> All Systems Operational
-                    </div>
-                </div>
-            </section>
-        </main>
+            <motion.section style={{ marginTop: 'var(--spacing-lg)' }} layout variants={itemVariants}>
+                <PatientList onNavigate={onNavigate} />
+            </motion.section>
+        </motion.main>
     );
 };
 
 const styles = {
     main: {
         marginLeft: '280px',
-        padding: 'var(--spacing-xl)', /* Generous padding */
+        padding: 'var(--spacing-xl)',
         minHeight: '100vh',
-        maxWidth: '1400px', /* Constrain width on large screens */
+        maxWidth: '1400px',
     },
     header: {
         marginTop: 'var(--spacing-lg)',
-        marginBottom: 'var(--spacing-xl)', /* Huge whitespace */
+        marginBottom: 'var(--spacing-xl)',
         display: 'flex',
         justifyContent: 'space-between',
         alignItems: 'baseline',
     },
     title: {
-        fontSize: '3.5rem', /* Very large, Swiss style */
+        fontSize: '3.5rem',
         fontWeight: 'var(--font-weight-heavy)',
         letterSpacing: '-0.04em',
         lineHeight: '1.1',
@@ -73,7 +110,7 @@ const styles = {
         display: 'grid',
         gridTemplateColumns: 'repeat(4, 1fr)',
         gap: 'var(--spacing-md)',
-        marginBottom: 'var(--spacing-md)', /* Tight gap between rows for bento feel */
+        marginBottom: 'var(--spacing-md)',
     },
     gridItem: {
         /* Grid item styling handled by card */
@@ -84,7 +121,7 @@ const styles = {
         gap: 'var(--spacing-md)',
     },
     bentoCardLarge: {
-        backgroundColor: 'var(--color-bg-subtle)', /* Off-white differentiation */
+        backgroundColor: 'var(--color-bg-subtle)',
         border: '1px solid var(--border-color)',
         borderRadius: 'var(--border-radius)',
         padding: 'var(--spacing-lg)',
@@ -111,11 +148,10 @@ const styles = {
         color: '#FFF',
         border: 'none',
         padding: '0.8rem 1.6rem',
-        borderRadius: '100px', /* Pill shape */
+        borderRadius: '100px',
         fontWeight: 'var(--font-weight-medium)',
         cursor: 'pointer',
         fontSize: '0.9rem',
-        transition: 'opacity 0.2s',
     },
     statusIndicator: {
         display: 'flex',
@@ -128,7 +164,7 @@ const styles = {
         width: '8px',
         height: '8px',
         borderRadius: '50%',
-        backgroundColor: '#34C759', /* Subtle green for status */
+        backgroundColor: '#34C759',
     }
 };
 

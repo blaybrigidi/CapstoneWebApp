@@ -1,14 +1,14 @@
 import React from 'react';
 import '../styles/variables.css';
 
-const Sidebar = () => {
+const Sidebar = ({ onNavigate, currentView = 'dashboard' }) => {
   const menuItems = [
-    { name: 'Dashboard', icon: 'Active' },
-    { name: 'Patients', icon: '' },
-    { name: 'Analytics', icon: '' },
-    { name: 'Alerts', icon: '' },
-    { name: 'Reports', icon: '' },
-    { name: 'Settings', icon: '' },
+    { name: 'Dashboard', icon: 'Active', id: 'dashboard' },
+    { name: 'Patients', icon: '', id: 'patients' },
+    { name: 'Analytics', icon: '', id: 'analytics' },
+    { name: 'Alerts', icon: '', id: 'alerts' },
+    { name: 'Reports', icon: '', id: 'reports' },
+    { name: 'Settings', icon: '', id: 'settings' },
   ];
 
   return (
@@ -18,19 +18,28 @@ const Sidebar = () => {
       </div>
       <nav style={styles.nav}>
         <ul style={styles.ul}>
-          {menuItems.map((item) => (
-            <li key={item.name} style={styles.li}>
-              <a
-                href="#"
-                style={{
-                  ...styles.link,
-                  ...(item.name === 'Dashboard' ? styles.activeLink : {})
-                }}
-              >
-                {item.name}
-              </a>
-            </li>
-          ))}
+          {menuItems.map((item) => {
+            const isActive = currentView === item.id || (currentView === 'patient-detail' && item.id === 'patients');
+            return (
+              <li key={item.name} style={styles.li}>
+                <a
+                  href="#"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    if (item.id === 'dashboard' || item.id === 'settings') {
+                      onNavigate(item.id);
+                    }
+                  }}
+                  style={{
+                    ...styles.link,
+                    ...(isActive ? styles.activeLink : {})
+                  }}
+                >
+                  {item.name}
+                </a>
+              </li>
+            );
+          })}
         </ul>
       </nav>
       <div style={styles.userProfile}>
