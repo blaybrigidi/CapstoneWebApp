@@ -3,7 +3,10 @@ import { AnimatePresence } from 'framer-motion';
 import Sidebar from './components/Sidebar';
 import Dashboard from './components/Dashboard';
 import PatientDetail from './components/PatientDetail';
+
 import Settings from './components/Settings';
+import AlertsManagement from './components/AlertsManagement';
+import Analytics from './components/Analytics';
 import './styles/variables.css';
 
 function App() {
@@ -23,6 +26,10 @@ function App() {
           <Dashboard key="dashboard" onNavigate={handleNavigate} />
         ) : currentView === 'settings' ? (
           <Settings key="settings" />
+        ) : currentView === 'alerts' ? (
+          <AlertsManagement key="alerts" />
+        ) : currentView === 'analytics' ? (
+          <Analytics key="analytics" />
         ) : (
           <PatientDetail
             key="patient-detail"

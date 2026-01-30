@@ -70,7 +70,11 @@ const VitalHistoryChart = () => {
 
             <div style={styles.chartContainer}>
                 <ResponsiveContainer width="100%" height="100%">
-                    <AreaChart data={data} margin={{ top: 10, right: 0, left: -20, bottom: 0 }}>
+                    <AreaChart
+                        key={activeMetric} // Force re-mount for smooth transition of axis
+                        data={data}
+                        margin={{ top: 10, right: 0, left: 0, bottom: 60 }}
+                    >
                         <defs>
                             <linearGradient id="colorMetric" x1="0" y1="0" x2="0" y2="1">
                                 <stop offset="5%" stopColor={metrics[activeMetric].color} stopOpacity={0.1} />
@@ -84,12 +88,15 @@ const VitalHistoryChart = () => {
                             tickLine={false}
                             tick={{ fontSize: 10, fill: '#999' }}
                             minTickGap={30}
+                            height={50}
+                            tickMargin={10}
                         />
                         <YAxis
                             axisLine={false}
                             tickLine={false}
                             tick={{ fontSize: 10, fill: '#999' }}
                             domain={metrics[activeMetric].domain}
+                            width={30} // Fixed width to align grid
                         />
                         <Tooltip content={<CustomTooltip />} />
                         <Area
@@ -99,7 +106,8 @@ const VitalHistoryChart = () => {
                             strokeWidth={2}
                             fillOpacity={1}
                             fill="url(#colorMetric)"
-                            animationDuration={500}
+                            animationDuration={800}
+                            animationEasing="ease-in-out"
                         />
                     </AreaChart>
                 </ResponsiveContainer>
@@ -162,6 +170,7 @@ const styles = {
     chartContainer: {
         flex: 1,
         minHeight: '300px',
+        overflow: 'hidden', /* Ensure content stays within borders */
     },
     tooltip: {
         backgroundColor: '#1A1A1A',

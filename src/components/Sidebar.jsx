@@ -26,7 +26,7 @@ const Sidebar = ({ onNavigate, currentView = 'dashboard' }) => {
                   href="#"
                   onClick={(e) => {
                     e.preventDefault();
-                    if (item.id === 'dashboard' || item.id === 'settings') {
+                    if (item.id === 'dashboard' || item.id === 'settings' || item.id === 'alerts' || item.id === 'analytics') {
                       onNavigate(item.id);
                     }
                   }}
@@ -45,7 +45,7 @@ const Sidebar = ({ onNavigate, currentView = 'dashboard' }) => {
       <div style={styles.userProfile}>
         <div style={styles.avatar}>DR</div>
         <div style={styles.userInfo}>
-          <p style={styles.userName}>Dr. Smith</p>
+          <p style={styles.userName}>Dr. Annor</p>
           <p style={styles.userRole}>Cardiologist</p>
         </div>
       </div>
