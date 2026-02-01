@@ -2,14 +2,21 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 
-const SummaryCard = ({ title, value, subtext, type = 'normal' }) => {
+const SummaryCard = ({ title, value, subtext, type = 'normal', onClick = null, isActive = false }) => {
   // Using pure monochromatic ghost styling as requested
   // type can be used for subtle indicators if needed, 
   // currently keeping strictly monochromatic per high-level directive
   const isAlert = type === 'alert';
 
   return (
-    <div style={styles.card}>
+    <div
+      style={{
+        ...styles.card,
+        cursor: onClick ? 'pointer' : 'default',
+        borderColor: isActive ? 'var(--color-text-primary)' : 'var(--border-color)',
+      }}
+      onClick={onClick}
+    >
       <div style={styles.header}>
         <h3 style={styles.title}>{title}</h3>
         {isAlert && (
@@ -45,7 +52,7 @@ const styles = {
     justifyContent: 'space-between',
     height: '100%',
     minHeight: '160px',
-    transition: 'border-color 0.3s ease, transform 0.3s ease', /* Allow smooth transition matching parent */
+    transition: 'border-color 0.3s ease, transform 0.3s ease, box-shadow 0.3s ease', /* Allow smooth transition matching parent */
     cursor: 'default',
   },
   header: {
@@ -66,8 +73,8 @@ const styles = {
     width: '8px',
     height: '8px',
     borderRadius: '50%',
-    backgroundColor: '#FF3B30', /* Red for heartbeat */
-    boxShadow: '0 0 4px rgba(255, 59, 48, 0.4)',
+    backgroundColor: '#D93025', /* Red for heartbeat */
+    boxShadow: '0 0 4px rgba(217, 48, 37, 0.4)',
   },
   content: {
     marginTop: 'auto',

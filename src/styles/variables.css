@@ -2,20 +2,25 @@
   /* Design Tokens - Swiss Aesthetic */
 
   /* Usage: Monochromatic Base */
-  --color-bg-body: #FFFFFF;
+  --color-bg-body: #EEEEEE;
   --color-bg-surface: #FFFFFF;
   --color-bg-subtle: #F9F9F9;
+  --color-bg-active: rgba(0, 146, 202, 0.08);
+  /* Light tint of primary */
+
+  /* Brand Colors */
+  --color-primary: #0092CA;
 
   /* Text & Icons */
-  --color-text-primary: #1A1A1A;
+  --color-text-primary: #222222;
   --color-text-secondary: #666666;
   /* Medium gray for secondary text */
   --color-text-tertiary: #999999;
   /* Light gray for labels */
 
   /* Borders & Separation */
-  --border-color: #E5E5E5;
-  /* Very light gray */
+  --border-color: #DDDDDD;
+  /* Slightly darker than bg */
   --border-width: 1px;
   --border-radius: 12px;
 

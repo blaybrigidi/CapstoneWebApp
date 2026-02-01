@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
-const AlertsManagement = () => {
+const AlertsManagement = ({ filter }) => {
     // Mock Alerts Data
     const [alerts, setAlerts] = useState([
         { id: 1, type: 'critical', patient: 'James Howlett', vital: 'SpO2', value: '82%', time: '2 mins ago' },
@@ -13,6 +13,10 @@ const AlertsManagement = () => {
         { id: 7, type: 'warning', patient: 'Diana Prince', vital: 'BP', value: '140/90', time: '6 hours ago' },
         { id: 8, type: 'critical', patient: 'Tony Stark', vital: 'Battery', value: 'Low (5%)', time: '7 hours ago' },
     ]);
+
+    const filteredAlerts = filter
+        ? alerts.filter(a => a.type === filter.toLowerCase())
+        : alerts;
 
     const handleResolve = (id) => {
         setAlerts(prev => prev.filter(alert => alert.id !== id));
@@ -83,7 +87,7 @@ const AlertsManagement = () => {
                     <h2 style={styles.panelTitle}>Live Alert Feed</h2>
                     <div style={styles.feedList}>
                         <AnimatePresence mode='popLayout'>
-                            {alerts.map(alert => (
+                            {filteredAlerts.map(alert => (
                                 <motion.div
                                     key={alert.id}
                                     layout
@@ -509,9 +513,10 @@ const styles = {
         fontWeight: 'var(--font-weight-heavy)',
         letterSpacing: '-0.03em',
         marginBottom: 'var(--spacing-xs)',
+        color: 'var(--color-text-on-brand)', // White
     },
     subtitle: {
-        color: 'var(--color-text-secondary)',
+        color: 'rgba(255, 255, 255, 0.8)', // White opacity
         fontSize: '1rem',
     },
     bentoGrid: {
@@ -579,15 +584,15 @@ const styles = {
     pulseDotCritical: {
         width: '10px',
         height: '10px',
-        backgroundColor: '#D32F2F',
+        backgroundColor: '#D93025', // Updated semantic red
         borderRadius: '50%',
-        boxShadow: '0 0 0 0 rgba(211, 47, 47, 0.7)',
+        boxShadow: '0 0 0 0 rgba(217, 48, 37, 0.7)',
         animation: 'pulse-red 2s infinite',
     },
     dotWarning: {
         width: '10px',
         height: '10px',
-        backgroundColor: '#000',
+        backgroundColor: '#F9AB00', // Updated semantic amber
         borderRadius: '50%',
     },
     patientName: {
@@ -602,12 +607,13 @@ const styles = {
     resolveButton: {
         background: 'none',
         border: 'none',
-        color: 'var(--color-text-secondary)',
+        color: 'var(--color-primary)', // Interactive text
         fontSize: '0.8rem',
         cursor: 'pointer',
-        textDecoration: 'underline',
+        textDecoration: 'none', // Removed underline for cleaner look, or keep? Links usually have it or hover.
         padding: 0,
         fontWeight: '500',
+        transition: 'color 0.2s',
     },
     cardContent: {
         display: 'flex',
@@ -626,7 +632,7 @@ const styles = {
         fontWeight: 'bold',
         color: 'var(--color-text-primary)',
     },
-    // ... existing config panel styles if any ...
+
     formContainer: {
         display: 'flex',
         flexDirection: 'column',

@@ -12,10 +12,12 @@ import './styles/variables.css';
 function App() {
   const [currentView, setCurrentView] = useState('dashboard');
   const [selectedPatientId, setSelectedPatientId] = useState(null);
+  const [viewParams, setViewParams] = useState({});
 
-  const handleNavigate = (view, patientId = null) => {
+  const handleNavigate = (view, patientId = null, params = {}) => {
     setCurrentView(view);
     if (patientId) setSelectedPatientId(patientId);
+    setViewParams(params);
   };
 
   return (
@@ -27,7 +29,7 @@ function App() {
         ) : currentView === 'settings' ? (
           <Settings key="settings" />
         ) : currentView === 'alerts' ? (
-          <AlertsManagement key="alerts" />
+          <AlertsManagement key="alerts" {...viewParams} />
         ) : currentView === 'analytics' ? (
           <Analytics key="analytics" />
         ) : (

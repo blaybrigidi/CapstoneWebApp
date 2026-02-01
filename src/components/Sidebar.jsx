@@ -55,12 +55,12 @@ const Sidebar = ({ onNavigate, currentView = 'dashboard' }) => {
 
 const styles = {
   sidebar: {
-    width: '280px', /* Slightly wider */
-    backgroundColor: 'var(--color-bg-body)',
+    width: '280px',
+    backgroundColor: 'var(--color-primary)', /* Sidebar Blue */
     height: '100vh',
     display: 'flex',
     flexDirection: 'column',
-    borderRight: '1px solid var(--border-color)',
+    borderRight: 'none',
     position: 'fixed',
     left: 0,
     top: 0,
@@ -74,46 +74,54 @@ const styles = {
     fontSize: '1.5rem',
     fontWeight: 'var(--font-weight-heavy)',
     letterSpacing: '-0.03em',
+    color: '#FFFFFF', /* White Logo */
   },
   nav: {
     flex: 1,
-    padding: '0 var(--spacing-md)',
+    padding: '0 var(--spacing-sm)',
   },
   ul: {
     listStyle: 'none',
     padding: 0,
     margin: 0,
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '4px',
   },
   li: {
-    marginBottom: '2px',
+    marginBottom: '0',
   },
   link: {
-    display: 'block',
-    padding: 'var(--spacing-sm) var(--spacing-md)',
-    borderRadius: 'var(--border-radius)',
+    display: 'flex',
+    alignItems: 'center',
+    padding: '12px 24px',
+    borderRadius: '8px',
     textDecoration: 'none',
-    color: 'var(--color-text-secondary)',
+    color: 'rgba(255, 255, 255, 0.7)', // Inactive: White opacity
     fontWeight: 'var(--font-weight-medium)',
     fontSize: '0.95rem',
     transition: 'all 0.2s ease',
+    borderLeft: 'none', // Remove border for pill shape
   },
   activeLink: {
-    backgroundColor: 'var(--color-bg-subtle)',
-    color: 'var(--color-text-primary)',
+    backgroundColor: 'rgba(255, 255, 255, 0.2)', // Stronger white tint
+    color: '#FFFFFF', // White
     fontWeight: 'var(--font-weight-bold)',
+    // borderLeft removed
   },
   userProfile: {
     padding: 'var(--spacing-lg)',
     display: 'flex',
     alignItems: 'center',
     gap: 'var(--spacing-sm)',
+    borderTop: '1px solid rgba(255, 255, 255, 0.1)',
   },
   avatar: {
     width: '36px',
     height: '36px',
     borderRadius: '50%',
-    backgroundColor: 'var(--color-text-primary)',
-    color: 'white',
+    backgroundColor: '#FFFFFF', /* White bg */
+    color: 'var(--color-primary)', /* Blue text */
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
@@ -128,12 +136,12 @@ const styles = {
     margin: 0,
     fontSize: '0.9rem',
     fontWeight: 'var(--font-weight-bold)',
-    color: 'var(--color-text-primary)',
+    color: '#FFFFFF', // White
   },
   userRole: {
     margin: 0,
     fontSize: '0.8rem',
-    color: 'var(--color-text-tertiary)',
+    color: 'rgba(255, 255, 255, 0.7)', // White opacity
   },
 };
 

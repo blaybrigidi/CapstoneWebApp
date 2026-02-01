@@ -89,7 +89,7 @@ const styles = {
     backButton: {
         background: 'none',
         border: 'none',
-        color: 'var(--color-text-secondary)',
+        color: 'var(--color-text-on-brand)', // White
         cursor: 'pointer',
         fontSize: '0.9rem',
         padding: 0,
@@ -106,15 +106,16 @@ const styles = {
         fontSize: '2.5rem',
         fontWeight: 'var(--font-weight-heavy)',
         letterSpacing: '-0.03em',
+        color: 'var(--color-text-on-brand)', // White
     },
     patientId: {
         fontSize: '1.2rem',
-        color: 'var(--color-text-secondary)',
+        color: 'rgba(255, 255, 255, 0.8)', // White opacity
         fontWeight: 'var(--font-weight-medium)',
     },
     pdfButton: {
-        backgroundColor: 'var(--color-text-primary)',
-        color: '#FFF',
+        backgroundColor: '#FFFFFF',
+        color: 'var(--color-primary)',
         border: 'none',
         padding: '0.8rem 1.6rem',
         borderRadius: '100px',
@@ -133,7 +134,7 @@ const styles = {
         border: '1px solid var(--border-color)',
         borderRadius: 'var(--border-radius)',
         padding: 'var(--spacing-lg)',
-        backgroundColor: 'var(--color-bg-subtle)',
+        backgroundColor: 'var(--color-bg-surface)', // White
         height: '400px', // Fixed height for the chart container
     },
 };

@@ -1,14 +1,42 @@
-import React from 'react';
+import React, { useState } from 'react';
 import SummaryCard from './SummaryCard';
 import { motion } from 'framer-motion';
 import PatientList from './PatientList';
+import RecentActivity from './RecentActivity';
 
 const Dashboard = ({ onNavigate }) => {
+    const [searchQuery, setSearchQuery] = useState('');
+    const [statusFilter, setStatusFilter] = useState('All');
+
     const stats = [
-        { title: 'Active Patients', value: '142', subtext: '+4 since yesterday', type: 'normal' },
-        { title: 'Critical Alerts', value: '3', subtext: 'Requires immediate attention', type: 'alert' },
-        { title: 'Warnings Today', value: '12', subtext: 'Blood pressure anomalies', type: 'warning' },
-        { title: 'Reports Pending', value: '8', subtext: 'Review needed by Friday', type: 'normal' },
+        {
+            title: 'Critical Alerts',
+            value: '3',
+            subtext: 'Requires immediate attention',
+            type: 'alert',
+            action: () => onNavigate('alerts', null, { filter: 'critical' })
+        },
+        {
+            title: 'Warnings Today',
+            value: '12',
+            subtext: 'Blood pressure anomalies',
+            type: 'warning',
+            action: () => onNavigate('alerts', null, { filter: 'warning' })
+        },
+        {
+            title: 'Active Patients',
+            value: '142',
+            subtext: '+4 since yesterday',
+            type: 'normal',
+            action: () => { setSearchQuery(''); setStatusFilter('All'); } // Clear filters
+        },
+        {
+            title: 'Reports Pending',
+            value: '8',
+            subtext: 'Review needed by Friday',
+            type: 'normal',
+            action: null
+        },
     ];
 
     const containerVariants = {
@@ -17,7 +45,7 @@ const Dashboard = ({ onNavigate }) => {
             opacity: 1,
             transition: {
                 staggerChildren: 0.1,
-                delayChildren: 0.2
+                delayChildren: 0.1
             }
         }
     };
@@ -27,11 +55,7 @@ const Dashboard = ({ onNavigate }) => {
         visible: {
             opacity: 1,
             y: 0,
-            transition: {
-                type: 'spring',
-                stiffness: 300,
-                damping: 24
-            }
+            transition: { type: 'spring', stiffness: 300, damping: 24 }
         }
     };
 
@@ -50,38 +74,74 @@ const Dashboard = ({ onNavigate }) => {
                         style={styles.buttonPrimary}
                         whileHover={{ scale: 1.05 }}
                         whileTap={{ scale: 0.95 }}
+                        onClick={() => {/* no-op for demo */ }}
                     >
                         + New Patient
                     </motion.button>
                 </div>
             </motion.header>
 
-            <motion.section style={styles.grid} layout>
+            {/* Summary Cards */}
+            <motion.section style={styles.statsGrid} layout>
                 {stats.map((stat, index) => (
                     <motion.div
                         key={index}
                         style={styles.gridItem}
                         variants={itemVariants}
                         layout
-                        whileHover={{
-                            scale: 1.01,
-                            borderColor: "#1A1A1A",
-                            transition: { duration: 0.3 }
-                        }}
+                        whileHover={stat.action ? { scale: 1.02 } : {}}
                     >
                         <SummaryCard
                             title={stat.title}
                             value={stat.value}
                             subtext={stat.subtext}
                             type={stat.type}
+                            onClick={stat.action}
+                            isActive={false}
                         />
                     </motion.div>
                 ))}
             </motion.section>
 
-            <motion.section style={{ marginTop: 'var(--spacing-lg)' }} layout variants={itemVariants}>
-                <PatientList onNavigate={onNavigate} />
-            </motion.section>
+            {/* Content Area: Patient List + Sidebar */}
+            <div style={styles.contentArea}>
+                <motion.div style={styles.mainColumn} variants={itemVariants}>
+
+                    {/* Search and Filter Bar */}
+                    <div style={styles.filterBar}>
+                        <div style={styles.searchContainer}>
+                            <span style={styles.searchIcon}>🔍</span>
+                            <input
+                                type="text"
+                                placeholder="Search patients..."
+                                style={styles.searchInput}
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                            />
+                        </div>
+                        <select
+                            style={styles.filterSelect}
+                            value={statusFilter}
+                            onChange={(e) => setStatusFilter(e.target.value)}
+                        >
+                            <option value="All">All Statuses</option>
+                            <option value="Critical">Critical Only</option>
+                            <option value="Warning">Warning Only</option>
+                            <option value="Normal">Normal Only</option>
+                        </select>
+                    </div>
+
+                    <PatientList
+                        onNavigate={onNavigate}
+                        searchQuery={searchQuery}
+                        statusFilter={statusFilter}
+                    />
+                </motion.div>
+
+                <motion.div style={styles.sideColumn} variants={itemVariants}>
+                    <RecentActivity onNavigate={onNavigate} />
+                </motion.div>
+            </div>
         </motion.main>
     );
 };
@@ -91,7 +151,7 @@ const styles = {
         marginLeft: '280px',
         padding: 'var(--spacing-xl)',
         minHeight: '100vh',
-        maxWidth: '1400px',
+        maxWidth: '1600px', // Increased max-width
     },
     header: {
         marginTop: 'var(--spacing-lg)',
@@ -101,50 +161,75 @@ const styles = {
         alignItems: 'baseline',
     },
     title: {
-        fontSize: '3.5rem',
+        fontSize: '3rem',
         fontWeight: 'var(--font-weight-heavy)',
         letterSpacing: '-0.04em',
         lineHeight: '1.1',
     },
-    grid: {
+    statsGrid: {
         display: 'grid',
         gridTemplateColumns: 'repeat(4, 1fr)',
         gap: 'var(--spacing-md)',
-        marginBottom: 'var(--spacing-md)',
+        marginBottom: 'var(--spacing-xl)',
     },
     gridItem: {
         /* Grid item styling handled by card */
     },
-    bentoSection: {
+    contentArea: {
         display: 'grid',
-        gridTemplateColumns: '2fr 1fr',
+        gridTemplateColumns: '3fr 1fr',
+        gap: 'var(--spacing-lg)',
+        alignItems: 'start',
+    },
+    mainColumn: {
+        display: 'flex',
+        flexDirection: 'column',
         gap: 'var(--spacing-md)',
     },
-    bentoCardLarge: {
-        backgroundColor: 'var(--color-bg-subtle)',
-        border: '1px solid var(--border-color)',
-        borderRadius: 'var(--border-radius)',
-        padding: 'var(--spacing-lg)',
-        minHeight: '400px',
+    sideColumn: {
+        display: 'flex',
+        flexDirection: 'column',
     },
-    bentoCardSmall: {
-        backgroundColor: 'var(--color-bg-subtle)',
-        border: '1px solid var(--border-color)',
-        borderRadius: 'var(--border-radius)',
-        padding: 'var(--spacing-lg)',
-        minHeight: '400px',
+    filterBar: {
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        padding: '0 0 var(--spacing-sm) 0',
     },
-    cardTitle: {
+    searchContainer: {
+        position: 'relative',
+        width: '300px',
+    },
+    searchIcon: {
+        position: 'absolute',
+        left: '10px',
+        top: '50%',
+        transform: 'translateY(-50%)',
         fontSize: '0.9rem',
-        fontWeight: 'var(--font-weight-bold)',
-        marginBottom: 'var(--spacing-md)',
+        color: 'var(--color-text-tertiary)',
     },
-    cardEmpty: {
-        color: 'var(--color-text-secondary)',
+    searchInput: {
+        width: '100%',
+        padding: '10px 10px 10px 36px',
+        borderRadius: '8px',
+        border: '1px solid var(--border-color)',
+        backgroundColor: 'var(--color-bg-surface)',
         fontSize: '0.9rem',
+        color: 'var(--color-text-primary)',
+        outline: 'none',
+    },
+    filterSelect: {
+        padding: '10px 16px',
+        borderRadius: '8px',
+        border: '1px solid var(--border-color)',
+        backgroundColor: 'var(--color-bg-surface)',
+        color: 'var(--color-text-primary)',
+        fontSize: '0.9rem',
+        outline: 'none',
+        cursor: 'pointer',
     },
     buttonPrimary: {
-        backgroundColor: 'var(--color-text-primary)',
+        backgroundColor: 'var(--color-primary)',
         color: '#FFF',
         border: 'none',
         padding: '0.8rem 1.6rem',
@@ -153,19 +238,6 @@ const styles = {
         cursor: 'pointer',
         fontSize: '0.9rem',
     },
-    statusIndicator: {
-        display: 'flex',
-        alignItems: 'center',
-        gap: '0.5rem',
-        fontSize: '0.9rem',
-        color: 'var(--color-text-secondary)',
-    },
-    dot: {
-        width: '8px',
-        height: '8px',
-        borderRadius: '50%',
-        backgroundColor: '#34C759',
-    }
 };
 
 export default Dashboard;
