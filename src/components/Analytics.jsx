@@ -1,25 +1,33 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-
-// Mock Data Generation
-const generateData = () => {
-    const data = [];
-    const now = new Date();
-    for (let i = 30; i >= 0; i--) {
-        const date = new Date(now);
-        date.setDate(date.getDate() - i);
-        data.push({
-            date: date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-            value: Math.floor(Math.random() * (100 - 40) + 40), // Random metric
-        });
-    }
-    return data;
-};
-
-const data = generateData();
+import { api } from '../services/api';
 
 const Analytics = () => {
+    const [data, setData] = useState([]);
+    const [stats, setStats] = useState({ averageSpO2: 0, anomalyEvents: 0 });
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchAnalytics = async () => {
+            try {
+                const response = await api.getAnalytics();
+                // Backend returns { trends: [], averageSpO2, anomalyEvents }
+                setData(response.trends);
+                setStats({
+                    averageSpO2: response.averageSpO2,
+                    anomalyEvents: response.anomalyEvents
+                });
+            } catch (error) {
+                console.error("Failed to load analytics", error);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchAnalytics();
+    }, []);
+
     // Animation Variants
     const containerVariants = {
         hidden: { opacity: 0 },
@@ -34,6 +42,10 @@ const Analytics = () => {
         hidden: { opacity: 0, y: 20 },
         visible: { opacity: 1, y: 0, transition: { type: 'spring', stiffness: 300, damping: 24 } }
     };
+
+    if (loading) {
+        return <div style={{ marginLeft: '280px', padding: '40px' }}>Loading analytics...</div>;
+    }
 
     return (
         <motion.main
@@ -53,7 +65,7 @@ const Analytics = () => {
                 <motion.section style={styles.chartCard} variants={itemVariants}>
                     <div style={styles.cardHeader}>
                         <h2 style={styles.cardTitle}>Global Health Trends</h2>
-                        <span style={styles.cardSubtitle}>Aggregate Patient Vitals (30 Days)</span>
+                        <span style={styles.cardSubtitle}>Average SpO2 (Last 24 Hours)</span>
                     </div>
 
                     <div style={styles.chartContainer}>
@@ -115,13 +127,13 @@ const Analytics = () => {
                     </MetricCard>
                     <MetricCard
                         title="Average SpO2"
-                        value="96%"
+                        value={`${stats.averageSpO2}%`}
                         subtext="Stable trend"
                         variants={itemVariants}
                     />
                     <MetricCard
                         title="Critical Events"
-                        value="3"
+                        value={stats.anomalyEvents}
                         subtext="Last 24 hours"
                         variants={itemVariants}
                         isCritical

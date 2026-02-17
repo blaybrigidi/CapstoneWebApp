@@ -1,44 +1,114 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import LiveVitalCard from './LiveVitalCard';
 import VitalHistoryChart from './VitalHistoryChart';
+import { api } from '../services/api';
+import { useParams } from 'react-router-dom';
+import { Button } from '@/components/ui/button';
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import { ArrowLeft, FileText, Activity } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
 
-const PatientDetail = ({ onNavigate, patientId }) => {
-    // Mock data - in a real app this would fetch based on patientId
-    const patient = {
-        name: 'James Howlett',
-        id: 'PT-X092',
-        vitals: {
-            hr: { value: 110, unit: 'bpm', status: 'Abnormal' },
-            spo2: { value: 92, unit: '%', status: 'Abnormal' },
-            temp: { value: 38.5, unit: '°C', status: 'Abnormal' }
+const PatientDetail = ({ onNavigate }) => {
+    const { patientId } = useParams();
+    const [patient, setPatient] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+
+    useEffect(() => {
+        const fetchPatient = async () => {
+            if (!patientId) return;
+            try {
+                const data = await api.getPatient(patientId);
+
+                const mappedPatient = {
+                    name: `${data.firstName} ${data.lastName}`,
+                    id: data.id,
+                    status: data.status || 'Normal',
+                    vitals: {
+                        hr: {
+                            value: data.lastVitalsConfig?.heartRate || '--',
+                            unit: 'bpm',
+                            status: getVitalStatus('hr', data.lastVitalsConfig?.heartRate)
+                        },
+                        spo2: {
+                            value: data.lastVitalsConfig?.spO2 || '--',
+                            unit: '%',
+                            status: getVitalStatus('spo2', data.lastVitalsConfig?.spO2)
+                        },
+                        temp: {
+                            value: 36.5, // Mock temp
+                            unit: '°C',
+                            status: 'Normal'
+                        }
+                    }
+                };
+                setPatient(mappedPatient);
+                setError(null);
+            } catch (error) {
+                console.error("Error fetching patient details:", error);
+                setError(error.message);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchPatient();
+        const interval = setInterval(fetchPatient, 5000);
+
+        return () => clearInterval(interval);
+    }, [patientId]);
+
+    const getVitalStatus = (type, value) => {
+        if (!value) return 'Unknown';
+        if (type === 'hr') {
+            if (value > 100 || value < 60) return 'Abnormal';
         }
+        if (type === 'spo2') {
+            if (value < 95) return 'Abnormal';
+        }
+        return 'Normal';
     };
+
+    if (loading) {
+        return <div className="p-10 text-white">Loading patient details...</div>;
+    }
+
+    if (!patient) {
+        return <div className="p-10 text-white">Patient not found</div>;
+    }
 
     return (
         <motion.main
-            style={styles.main}
+            className="ml-[280px] p-8 min-h-screen max-w-[1400px]"
             initial={{ opacity: 0, x: 50 }}
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: -50 }}
             transition={{ type: 'tween', ease: 'easeOut', duration: 0.3 }}
         >
-            <header style={styles.header}>
-                <div style={styles.headerLeft}>
-                    <button onClick={() => onNavigate('dashboard')} style={styles.backButton}>
-                        ← Back to Dashboard
-                    </button>
-                    <div style={styles.patientInfo}>
-                        <h1 style={styles.patientName}>{patient.name}</h1>
-                        <span style={styles.patientId}>ID: {patient.id}</span>
+            <header className="flex flex-col md:flex-row justify-between items-start md:items-center mb-10 gap-4">
+                <div className="flex flex-col gap-2">
+                    <Button
+                        variant="ghost"
+                        className="text-muted-foreground hover:text-foreground p-0 h-auto font-medium"
+                        onClick={() => onNavigate('dashboard')}
+                    >
+                        <ArrowLeft className="mr-2 h-4 w-4" /> Back to Dashboard
+                    </Button>
+                    <div className="flex items-baseline gap-4 mt-2">
+                        <h1 className="text-4xl font-extrabold tracking-tight text-foreground">{patient.name}</h1>
+                        <span className="text-lg text-muted-foreground font-medium">ID: {patient.id}</span>
+                        {patient.status === 'Critical' && (
+                            <Badge variant="destructive" className="text-sm px-3 py-1">CRITICAL</Badge>
+                        )}
                     </div>
                 </div>
-                <button style={styles.pdfButton}>
-                    Generate PDF Report
-                </button>
+                <Button className="rounded-full shadow-lg" size="lg">
+                    <FileText className="mr-2 h-4 w-4" /> Generate PDF Report
+                </Button>
             </header>
 
-            <section style={styles.vitalsGrid}>
+            <section className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
                 <LiveVitalCard
                     label="Heart Rate"
                     value={patient.vitals.hr.value}
@@ -60,83 +130,12 @@ const PatientDetail = ({ onNavigate, patientId }) => {
             </section>
 
             {/* Historical Trends */}
-            <section style={styles.historySection}>
-                <VitalHistoryChart />
+            <section className="h-[500px]">
+                <VitalHistoryChart patientId={patient.id} />
             </section>
 
         </motion.main>
     );
-};
-
-const styles = {
-    main: {
-        marginLeft: '280px',
-        padding: 'var(--spacing-xl)',
-        minHeight: '100vh',
-        maxWidth: '1400px',
-    },
-    header: {
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        marginBottom: 'var(--spacing-xl)',
-    },
-    headerLeft: {
-        display: 'flex',
-        flexDirection: 'column',
-        gap: 'var(--spacing-md)',
-    },
-    backButton: {
-        background: 'none',
-        border: 'none',
-        color: 'var(--color-text-on-brand)', // White
-        cursor: 'pointer',
-        fontSize: '0.9rem',
-        padding: 0,
-        textAlign: 'left',
-        fontWeight: 'var(--font-weight-medium)',
-        width: 'fit-content',
-    },
-    patientInfo: {
-        display: 'flex',
-        alignItems: 'baseline',
-        gap: 'var(--spacing-md)',
-    },
-    patientName: {
-        fontSize: '2.5rem',
-        fontWeight: 'var(--font-weight-heavy)',
-        letterSpacing: '-0.03em',
-        color: 'var(--color-text-on-brand)', // White
-    },
-    patientId: {
-        fontSize: '1.2rem',
-        color: 'rgba(255, 255, 255, 0.8)', // White opacity
-        fontWeight: 'var(--font-weight-medium)',
-    },
-    pdfButton: {
-        backgroundColor: '#FFFFFF',
-        color: 'var(--color-primary)',
-        border: 'none',
-        padding: '0.8rem 1.6rem',
-        borderRadius: '100px',
-        fontWeight: 'var(--font-weight-medium)',
-        cursor: 'pointer',
-        fontSize: '0.9rem',
-        transition: 'opacity 0.2s',
-    },
-    vitalsGrid: {
-        display: 'grid',
-        gridTemplateColumns: 'repeat(3, 1fr)',
-        gap: 'var(--spacing-lg)',
-        marginBottom: 'var(--spacing-xl)',
-    },
-    historySection: {
-        border: '1px solid var(--border-color)',
-        borderRadius: 'var(--border-radius)',
-        padding: 'var(--spacing-lg)',
-        backgroundColor: 'var(--color-bg-surface)', // White
-        height: '400px', // Fixed height for the chart container
-    },
 };
 
 export default PatientDetail;

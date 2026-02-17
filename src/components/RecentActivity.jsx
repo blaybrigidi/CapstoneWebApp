@@ -3,9 +3,9 @@ import { motion } from 'framer-motion';
 
 const RecentActivity = ({ onNavigate }) => {
     const activities = [
-        { id: 1, text: "James Howlett marked Critical", time: "2 min ago", type: "critical", link: { view: 'patient-detail', id: 3 } },
-        { id: 2, text: "New alert for Sarah Connor", time: "5 min ago", type: "warning", link: { view: 'alerts', id: 2 } },
-        { id: 3, text: "Dr. House reviewed active reports", time: "15 min ago", type: "info" },
+        { id: 1, text: "Nana Kwadwo marked Critical", time: "2 min ago", type: "critical", link: { view: 'patient-detail', id: 3 } },
+        { id: 2, text: "New alert for Chris Lamptey", time: "5 min ago", type: "warning", link: { view: 'alerts', id: 2 } },
+        { id: 3, text: "Dr. Blay reviewed active reports", time: "15 min ago", type: "info" },
         { id: 4, text: "System maintenance scheduled", time: "1 hour ago", type: "info" },
     ];
 

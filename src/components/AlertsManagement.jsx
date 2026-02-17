@@ -4,14 +4,14 @@ import { motion, AnimatePresence } from 'framer-motion';
 const AlertsManagement = ({ filter }) => {
     // Mock Alerts Data
     const [alerts, setAlerts] = useState([
-        { id: 1, type: 'critical', patient: 'James Howlett', vital: 'SpO2', value: '82%', time: '2 mins ago' },
-        { id: 2, type: 'warning', patient: 'Sarah Connor', vital: 'Heart Rate', value: '145 bpm', time: '15 mins ago' },
+        { id: 1, type: 'critical', patient: 'James Koomson', vital: 'SpO2', value: '82%', time: '2 mins ago' },
+        { id: 2, type: 'warning', patient: 'Maame Annor', vital: 'Heart Rate', value: '145 bpm', time: '15 mins ago' },
         { id: 3, type: 'info', patient: 'System', vital: 'Calibration', value: 'Complete', time: '1 hour ago' },
-        { id: 4, type: 'warning', patient: 'Ellen Ripley', vital: 'Temp', value: '38.2°C', time: '3 hours ago' },
-        { id: 5, type: 'critical', patient: 'Bruce Wayne', vital: 'Heart Rate', value: '45 bpm', time: '4 hours ago' },
+        { id: 4, type: 'warning', patient: 'Sipa Blay', vital: 'Temp', value: '38.2°C', time: '3 hours ago' },
+        { id: 5, type: 'critical', patient: 'Joshua Davids', vital: 'Heart Rate', value: '45 bpm', time: '4 hours ago' },
         { id: 6, type: 'info', patient: 'System', vital: 'Update', value: 'Patch v2.1', time: '5 hours ago' },
-        { id: 7, type: 'warning', patient: 'Diana Prince', vital: 'BP', value: '140/90', time: '6 hours ago' },
-        { id: 8, type: 'critical', patient: 'Tony Stark', vital: 'Battery', value: 'Low (5%)', time: '7 hours ago' },
+        { id: 7, type: 'warning', patient: 'Nana Owusu', vital: 'BP', value: '140/90', time: '6 hours ago' },
+        { id: 8, type: 'critical', patient: 'Ackah Nyamike', vital: 'Battery', value: 'Low (5%)', time: '7 hours ago' },
     ]);
 
     const filteredAlerts = filter

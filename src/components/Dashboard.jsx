@@ -1,40 +1,73 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import SummaryCard from './SummaryCard';
 import { motion } from 'framer-motion';
 import PatientList from './PatientList';
 import RecentActivity from './RecentActivity';
+import { api } from '../services/api';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Search } from 'lucide-react';
 
 const Dashboard = ({ onNavigate }) => {
     const [searchQuery, setSearchQuery] = useState('');
     const [statusFilter, setStatusFilter] = useState('All');
+    const [dashboardStats, setDashboardStats] = useState({
+        criticalAlerts: 0,
+        warnings: 0,
+        activePatients: 0,
+        pendingReports: 0
+    });
+    const [loading, setLoading] = useState(true);
 
-    const stats = [
+    useEffect(() => {
+        const fetchStats = async () => {
+            try {
+                const data = await api.getDashboardStats();
+                setDashboardStats(data);
+            } catch (error) {
+                console.error("Failed to load dashboard stats", error);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchStats();
+        const interval = setInterval(fetchStats, 5000);
+
+        return () => clearInterval(interval);
+    }, []);
+
+    const statsCards = [
         {
             title: 'Critical Alerts',
-            value: '3',
+            value: dashboardStats.criticalAlerts,
+            icon: 'Activity',
+            type: 'critical',
             subtext: 'Requires immediate attention',
-            type: 'alert',
             action: () => onNavigate('alerts', null, { filter: 'critical' })
         },
         {
-            title: 'Warnings Today',
-            value: '12',
-            subtext: 'Blood pressure anomalies',
+            title: 'Warnings',
+            value: dashboardStats.warnings,
+            icon: 'AlertTriangle',
             type: 'warning',
+            subtext: 'Monitor closely',
             action: () => onNavigate('alerts', null, { filter: 'warning' })
         },
         {
             title: 'Active Patients',
-            value: '142',
-            subtext: '+4 since yesterday',
-            type: 'normal',
-            action: () => { setSearchQuery(''); setStatusFilter('All'); } // Clear filters
+            value: dashboardStats.activePatients,
+            icon: 'Users',
+            type: 'info',
+            subtext: 'Currently monitored',
+            action: () => { setSearchQuery(''); setStatusFilter('All'); }
         },
         {
             title: 'Reports Pending',
-            value: '8',
-            subtext: 'Review needed by Friday',
-            type: 'normal',
+            value: dashboardStats.pendingReports,
+            icon: 'FileText',
+            type: 'info',
+            subtext: 'To be reviewed',
             action: null
         },
     ];
@@ -61,66 +94,65 @@ const Dashboard = ({ onNavigate }) => {
 
     return (
         <motion.main
-            style={styles.main}
+            className="ml-[280px] p-8 min-h-screen max-w-[1600px]"
             initial="hidden"
             animate="visible"
             exit={{ opacity: 0, transition: { duration: 0.2 } }}
             variants={containerVariants}
         >
-            <motion.header style={styles.header} variants={itemVariants}>
-                <h1 style={styles.title}>Patient Overview</h1>
-                <div style={styles.actions}>
-                    <motion.button
-                        style={styles.buttonPrimary}
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
+            <motion.header className="mt-8 mb-12 flex justify-between items-baseline" variants={itemVariants}>
+                <h1 className="text-5xl font-extrabold tracking-tight leading-none text-foreground">
+                    Patient Overview
+                </h1>
+                <div className="flex gap-4">
+                    <Button
+                        className="rounded-full px-8 py-6 text-md font-medium shadow-lg hover:shadow-xl transition-all"
                         onClick={() => {/* no-op for demo */ }}
                     >
                         + New Patient
-                    </motion.button>
+                    </Button>
                 </div>
             </motion.header>
 
             {/* Summary Cards */}
-            <motion.section style={styles.statsGrid} layout>
-                {stats.map((stat, index) => (
+            <section className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 mb-12">
+                {statsCards.map((stat, index) => (
                     <motion.div
                         key={index}
-                        style={styles.gridItem}
                         variants={itemVariants}
-                        layout
-                        whileHover={stat.action ? { scale: 1.02 } : {}}
+                        whileHover={stat.action ? { y: -5 } : {}}
                     >
                         <SummaryCard
                             title={stat.title}
                             value={stat.value}
                             subtext={stat.subtext}
                             type={stat.type}
+                            icon={stat.icon}
                             onClick={stat.action}
                             isActive={false}
                         />
                     </motion.div>
                 ))}
-            </motion.section>
+            </section>
 
             {/* Content Area: Patient List + Sidebar */}
-            <div style={styles.contentArea}>
-                <motion.div style={styles.mainColumn} variants={itemVariants}>
+            <div className="grid grid-cols-1 lg:grid-cols-4 gap-8 items-start">
+                <motion.div className="lg:col-span-3 flex flex-col gap-6" variants={itemVariants}>
 
                     {/* Search and Filter Bar */}
-                    <div style={styles.filterBar}>
-                        <div style={styles.searchContainer}>
-                            <span style={styles.searchIcon}>🔍</span>
-                            <input
+                    <div className="flex justify-between items-center pb-2">
+                        <div className="relative w-[300px]">
+                            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                            <Input
                                 type="text"
                                 placeholder="Search patients..."
-                                style={styles.searchInput}
+                                className="pl-9 h-11 bg-background"
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
                             />
                         </div>
                         <select
-                            style={styles.filterSelect}
+                            className="px-4 py-2.5 rounded-md border border-input bg-background text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                             value={statusFilter}
                             onChange={(e) => setStatusFilter(e.target.value)}
                         >
@@ -138,106 +170,12 @@ const Dashboard = ({ onNavigate }) => {
                     />
                 </motion.div>
 
-                <motion.div style={styles.sideColumn} variants={itemVariants}>
+                <motion.div className="lg:col-span-1 flex flex-col" variants={itemVariants}>
                     <RecentActivity onNavigate={onNavigate} />
                 </motion.div>
             </div>
         </motion.main>
     );
-};
-
-const styles = {
-    main: {
-        marginLeft: '280px',
-        padding: 'var(--spacing-xl)',
-        minHeight: '100vh',
-        maxWidth: '1600px', // Increased max-width
-    },
-    header: {
-        marginTop: 'var(--spacing-lg)',
-        marginBottom: 'var(--spacing-xl)',
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'baseline',
-    },
-    title: {
-        fontSize: '3rem',
-        fontWeight: 'var(--font-weight-heavy)',
-        letterSpacing: '-0.04em',
-        lineHeight: '1.1',
-    },
-    statsGrid: {
-        display: 'grid',
-        gridTemplateColumns: 'repeat(4, 1fr)',
-        gap: 'var(--spacing-md)',
-        marginBottom: 'var(--spacing-xl)',
-    },
-    gridItem: {
-        /* Grid item styling handled by card */
-    },
-    contentArea: {
-        display: 'grid',
-        gridTemplateColumns: '3fr 1fr',
-        gap: 'var(--spacing-lg)',
-        alignItems: 'start',
-    },
-    mainColumn: {
-        display: 'flex',
-        flexDirection: 'column',
-        gap: 'var(--spacing-md)',
-    },
-    sideColumn: {
-        display: 'flex',
-        flexDirection: 'column',
-    },
-    filterBar: {
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        padding: '0 0 var(--spacing-sm) 0',
-    },
-    searchContainer: {
-        position: 'relative',
-        width: '300px',
-    },
-    searchIcon: {
-        position: 'absolute',
-        left: '10px',
-        top: '50%',
-        transform: 'translateY(-50%)',
-        fontSize: '0.9rem',
-        color: 'var(--color-text-tertiary)',
-    },
-    searchInput: {
-        width: '100%',
-        padding: '10px 10px 10px 36px',
-        borderRadius: '8px',
-        border: '1px solid var(--border-color)',
-        backgroundColor: 'var(--color-bg-surface)',
-        fontSize: '0.9rem',
-        color: 'var(--color-text-primary)',
-        outline: 'none',
-    },
-    filterSelect: {
-        padding: '10px 16px',
-        borderRadius: '8px',
-        border: '1px solid var(--border-color)',
-        backgroundColor: 'var(--color-bg-surface)',
-        color: 'var(--color-text-primary)',
-        fontSize: '0.9rem',
-        outline: 'none',
-        cursor: 'pointer',
-    },
-    buttonPrimary: {
-        backgroundColor: 'var(--color-primary)',
-        color: '#FFF',
-        border: 'none',
-        padding: '0.8rem 1.6rem',
-        borderRadius: '100px',
-        fontWeight: 'var(--font-weight-medium)',
-        cursor: 'pointer',
-        fontSize: '0.9rem',
-    },
 };
 
 export default Dashboard;

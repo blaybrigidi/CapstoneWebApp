@@ -1,26 +1,51 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import { motion } from 'framer-motion';
+import { api } from '../services/api';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 
-const generateData = () => {
-    const data = [];
-    for (let i = 30; i >= 0; i--) {
-        const date = new Date();
-        date.setDate(date.getDate() - i);
-        data.push({
-            date: date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-            hr: Math.floor(Math.random() * (120 - 60) + 60),
-            spo2: Math.floor(Math.random() * (100 - 90) + 90),
-            temp: parseFloat((Math.random() * (38 - 36) + 36).toFixed(1)),
-        });
-    }
-    return data;
-};
-
-const data = generateData();
-
-const VitalHistoryChart = () => {
+const VitalHistoryChart = ({ patientId }) => {
     const [activeMetric, setActiveMetric] = useState('hr');
+    const [chartData, setChartData] = useState([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchData = async () => {
+            if (!patientId) return;
+            try {
+                // Fetch 24h history
+                const response = await api.getVitals(patientId, '24h');
+
+                // Filter by active metric type
+                const metricTypeMap = {
+                    'hr': 'HEART_RATE',
+                    'spo2': 'SPO2',
+                    'temp': 'TEMPERATURE'
+                };
+
+                const filtered = response.filter(v => v.type === metricTypeMap[activeMetric]);
+
+                // Sort by timestamp ascending
+                filtered.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+
+                // Map to chart format
+                const mapped = filtered.map(v => ({
+                    date: new Date(v.timestamp).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
+                    [activeMetric]: v.value,
+                    originalTimestamp: v.timestamp
+                }));
+
+                setChartData(mapped);
+                setLoading(false);
+            } catch (error) {
+                console.error("Error fetching vital history:", error);
+            }
+        };
+
+        fetchData();
+        const interval = setInterval(fetchData, 5000);
+        return () => clearInterval(interval);
+    }, [patientId, activeMetric]);
 
     const metrics = {
         hr: { label: 'Heart Rate', color: '#0056b3', unit: 'bpm', domain: [40, 140] },
@@ -31,9 +56,9 @@ const VitalHistoryChart = () => {
     const CustomTooltip = ({ active, payload, label }) => {
         if (active && payload && payload.length) {
             return (
-                <div style={styles.tooltip}>
-                    <p style={styles.tooltipLabel}>{label}</p>
-                    <p style={styles.tooltipValue}>
+                <div className="bg-popover text-popover-foreground px-3 py-2 rounded-lg border shadow-md text-sm">
+                    <p className="font-medium mb-1 text-muted-foreground">{label}</p>
+                    <p className="font-bold text-lg">
                         {`${payload[0].value} ${metrics[activeMetric].unit}`}
                     </p>
                 </div>
@@ -43,37 +68,33 @@ const VitalHistoryChart = () => {
     };
 
     return (
-        <div style={styles.container}>
-            <div style={styles.header}>
-                <h3 style={styles.title}>Historical Trends</h3>
-                <div style={styles.toggles}>
-                    <button
-                        style={activeMetric === 'hr' ? styles.activeToggle : styles.toggle}
-                        onClick={() => setActiveMetric('hr')}
-                    >
-                        Heart Rate
-                    </button>
-                    <button
-                        style={activeMetric === 'spo2' ? styles.activeToggle : styles.toggle}
-                        onClick={() => setActiveMetric('spo2')}
-                    >
-                        SpO2
-                    </button>
-                    <button
-                        style={activeMetric === 'temp' ? styles.activeToggle : styles.toggle}
-                        onClick={() => setActiveMetric('temp')}
-                    >
-                        Temp
-                    </button>
+        <Card className="h-full flex flex-col shadow-sm">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-6">
+                <CardTitle className="text-lg font-semibold text-foreground">
+                    Historical Trends
+                </CardTitle>
+                <div className="flex bg-muted p-1 rounded-lg gap-1">
+                    {['hr', 'spo2', 'temp'].map((metric) => (
+                        <button
+                            key={metric}
+                            className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all ${activeMetric === metric
+                                ? 'bg-background shadow-sm text-foreground'
+                                : 'text-muted-foreground hover:text-foreground'
+                                }`}
+                            onClick={() => setActiveMetric(metric)}
+                        >
+                            {metrics[metric].label}
+                        </button>
+                    ))}
                 </div>
-            </div>
+            </CardHeader>
 
-            <div style={styles.chartContainer}>
+            <CardContent className="flex-1 min-h-[300px] w-full px-2">
                 <ResponsiveContainer width="100%" height="100%">
                     <AreaChart
-                        key={activeMetric} // Force re-mount for smooth transition of axis
-                        data={data}
-                        margin={{ top: 10, right: 0, left: 0, bottom: 60 }}
+                        key={activeMetric}
+                        data={chartData}
+                        margin={{ top: 10, right: 0, left: 0, bottom: 0 }}
                     >
                         <defs>
                             <linearGradient id="colorMetric" x1="0" y1="0" x2="0" y2="1">
@@ -81,22 +102,22 @@ const VitalHistoryChart = () => {
                                 <stop offset="95%" stopColor={metrics[activeMetric].color} stopOpacity={0} />
                             </linearGradient>
                         </defs>
-                        <CartesianGrid vertical={false} stroke="#E5E5E5" strokeDasharray="3 3" />
+                        <CartesianGrid vertical={false} stroke="hsl(var(--border))" strokeDasharray="3 3" />
                         <XAxis
                             dataKey="date"
                             axisLine={false}
                             tickLine={false}
-                            tick={{ fontSize: 10, fill: '#999' }}
+                            tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }}
                             minTickGap={30}
-                            height={50}
+                            height={30}
                             tickMargin={10}
                         />
                         <YAxis
                             axisLine={false}
                             tickLine={false}
-                            tick={{ fontSize: 10, fill: '#999' }}
+                            tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }}
                             domain={metrics[activeMetric].domain}
-                            width={30} // Fixed width to align grid
+                            width={30}
                         />
                         <Tooltip content={<CustomTooltip />} />
                         <Area
@@ -111,86 +132,9 @@ const VitalHistoryChart = () => {
                         />
                     </AreaChart>
                 </ResponsiveContainer>
-            </div>
-        </div>
+            </CardContent>
+        </Card>
     );
-};
-
-const styles = {
-    container: {
-        backgroundColor: 'var(--color-bg-surface)',
-        border: '1px solid var(--border-color)',
-        borderRadius: 'var(--border-radius)',
-        padding: 'var(--spacing-lg)',
-        height: '100%',
-        display: 'flex',
-        flexDirection: 'column',
-    },
-    header: {
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        marginBottom: 'var(--spacing-lg)',
-    },
-    title: {
-        fontSize: '1rem',
-        fontWeight: 'var(--font-weight-bold)',
-        color: 'var(--color-text-primary)',
-        margin: 0,
-    },
-    toggles: {
-        display: 'flex',
-        gap: '4px',
-        backgroundColor: 'var(--color-bg-subtle)',
-        padding: '4px',
-        borderRadius: '8px',
-    },
-    toggle: {
-        border: 'none',
-        backgroundColor: 'transparent',
-        padding: '6px 12px',
-        borderRadius: '6px',
-        fontSize: '0.8rem',
-        color: 'var(--color-text-secondary)',
-        cursor: 'pointer',
-        fontWeight: '500',
-        transition: 'all 0.2s',
-    },
-    activeToggle: {
-        border: 'none',
-        backgroundColor: 'var(--color-bg-surface)',
-        padding: '6px 12px',
-        borderRadius: '6px',
-        fontSize: '0.8rem',
-        color: 'var(--color-text-primary)',
-        cursor: 'pointer',
-        fontWeight: '600',
-        boxShadow: '0 2px 4px rgba(0,0,0,0.05)',
-    },
-    chartContainer: {
-        flex: 1,
-        minHeight: '300px',
-        overflow: 'hidden', /* Ensure content stays within borders */
-    },
-    tooltip: {
-        backgroundColor: '#1A1A1A',
-        padding: '8px 12px',
-        borderRadius: '6px',
-        boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-    },
-    tooltipLabel: {
-        margin: 0,
-        fontSize: '0.75rem',
-        color: '#888',
-        marginBottom: '4px',
-    },
-    tooltipValue: {
-        margin: 0,
-        fontSize: '0.9rem',
-        color: '#FFF',
-        fontWeight: 'bold',
-    }
-
 };
 
 export default VitalHistoryChart;
