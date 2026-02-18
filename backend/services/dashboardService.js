@@ -1,6 +1,24 @@
-const { db } = require('../config/firebase');
+const { db, rtdb } = require('../config/firebase');
+
+// Simple in-memory cache
+const cache = {
+    stats: { data: null, timestamp: 0 },
+    analytics: { data: null, timestamp: 0 },
+    activity: { data: null, timestamp: 0 }
+};
+
+const CACHE_TTL = {
+    STATS: 15000, // 15 seconds
+    ANALYTICS: 60000, // 1 minute
+    ACTIVITY: 10000 // 10 seconds (for recent alerts)
+};
 
 const computeStats = async () => {
+    const now = Date.now();
+    if (cache.stats.data && (now - cache.stats.timestamp < CACHE_TTL.STATS)) {
+        return cache.stats.data;
+    }
+
     try {
         const patientsRef = db.collection('patients');
         const snapshot = await patientsRef.get();
@@ -16,42 +34,144 @@ const computeStats = async () => {
             if (data.status === 'Warning') warning++;
         });
 
-        // Pending reports is still mocked as we don't have a reports collection yet
-        return {
+        const stats = {
             criticalAlerts: critical,
             warnings: warning,
             activePatients: active,
             pendingReports: 5 // Mocked
         };
+
+        cache.stats = { data: stats, timestamp: now };
+        return stats;
     } catch (error) {
         console.error("Error computing stats:", error);
-        throw new Error('Failed to compute dashboard stats');
+        // Fallback mock data
+        return {
+            criticalAlerts: 2,
+            warnings: 5,
+            activePatients: 12,
+            pendingReports: 4
+        };
     }
 };
 
 const fetchActivityLog = async () => {
-    // TODO: Query Alert/Activity table
+    const now = Date.now();
+    if (cache.activity.data && (now - cache.activity.timestamp < CACHE_TTL.ACTIVITY)) {
+        console.log('Serving activity from cache');
+        return cache.activity.data;
+    }
 
-    // Mock Response
-    return [
-        { id: 1, text: "Nana Kwadwo marked Critical", time: "2 min ago", type: "critical" },
-        { id: 2, text: "New alert for Chris Lamptey", time: "5 min ago", type: "warning" },
-        { id: 3, text: "Dr. Blay reviewed active reports", time: "15 min ago", type: "info" }
-    ];
+    try {
+        // Similar to fetchUnreadAlerts, fetch from RTDB and flatten
+        const snapshot = await rtdb.ref('alerts').once('value');
+        if (!snapshot.exists()) return [];
+
+        const allAlerts = [];
+        const data = snapshot.val();
+
+        Object.keys(data).forEach(patientId => {
+            const patientAlerts = data[patientId];
+            Object.keys(patientAlerts).forEach(alertId => {
+                allAlerts.push({ id: alertId, patientId, ...patientAlerts[alertId] });
+            });
+        });
+
+        const sorted = allAlerts
+            .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
+            .slice(0, 10);
+
+        cache.activity = { data: sorted, timestamp: now };
+        return sorted;
+    } catch (error) {
+        console.error("Error fetching activity log from RTDB:", error);
+        return [];
+    }
+};
+
+const fetchUnreadAlerts = async () => {
+    try {
+        const snapshot = await rtdb.ref('alerts').once('value');
+        if (!snapshot.exists()) return [];
+
+        let allAlerts = [];
+        const data = snapshot.val();
+
+        // Flatten
+        Object.keys(data).forEach(patientId => {
+            const patientAlerts = data[patientId];
+            Object.keys(patientAlerts).forEach(alertId => {
+                const alert = patientAlerts[alertId];
+                if (!alert.isRead) {
+                    allAlerts.push({ id: alertId, patientId, ...alert });
+                }
+            });
+        });
+
+        // Sort and Limit
+        allAlerts = allAlerts
+            .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
+            .slice(0, 20);
+
+        // Enrich with Patient Data
+        const enrichedAlerts = await Promise.all(allAlerts.map(async (alert) => {
+            try {
+                // Fetch basic patient info (Name)
+                // In a real app, cache this or use a where-in query
+                const patientDoc = await db.collection('patients').doc(alert.patientId).get();
+                const patientName = patientDoc.exists
+                    ? `${patientDoc.data().firstName} ${patientDoc.data().lastName}`
+                    : 'Unknown Patient';
+
+                // Format relative time (simple approximation)
+                const diffMs = new Date() - new Date(alert.timestamp);
+                const diffMins = Math.floor(diffMs / 60000);
+                let timeString = 'Just now';
+                if (diffMins > 0 && diffMins < 60) timeString = `${diffMins}m ago`;
+                if (diffMins >= 60) timeString = `${Math.floor(diffMins / 60)}h ago`;
+
+                // Map Vital Label
+                const vitalMap = {
+                    'HEART_RATE': 'Heart Rate',
+                    'SPO2': 'Blood Oxygen',
+                    'TEMPERATURE': 'Body Temp'
+                };
+
+                return {
+                    ...alert,
+                    patient: patientName,
+                    time: timeString,
+                    vital: vitalMap[alert.category] || alert.category,
+                    value: `${alert.value} ${alert.unit || ''}`.trim()
+                    // Note: unit might not be in alert, if not, value is just number
+                };
+            } catch (err) {
+                console.error(`Error enriching alert ${alert.id}:`, err);
+                return alert; // Return raw if enrichment fails
+            }
+        }));
+
+        return enrichedAlerts;
+
+    } catch (error) {
+        console.error("Error fetching unread alerts form RTDB:", error);
+        return [];
+    }
 };
 
 const calculateAnalytics = async () => {
+    const now = Date.now();
+    if (cache.analytics.data && (now - cache.analytics.timestamp < CACHE_TTL.ANALYTICS)) {
+        return cache.analytics.data;
+    }
+
     try {
         const patientsRef = db.collection('patients');
         const snapshot = await patientsRef.get();
         const patients = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
-        // 1. Fetch vitals for all patients (last 24h)
-        // Optimization: In a real app, use a collectionGroup query or pre-aggregated stats.
-        // Here we'll query each patient's vitals subcollection for the last 24h.
-
-        const now = new Date();
-        const twentyFourHoursAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+        const nowObj = new Date();
+        const twentyFourHoursAgo = new Date(nowObj.getTime() - 24 * 60 * 60 * 1000);
 
         let allVitals = [];
 
@@ -68,11 +188,6 @@ const calculateAnalytics = async () => {
 
         const results = await Promise.all(promises);
         results.forEach(pVitals => allVitals.push(...pVitals));
-
-        // 2. Aggregate by Hour for the Chart
-        // We want to show "Average SpO2" or "Average Stability" over time
-        // Let's create a "System Health Score" based on vitals stability
-        // Or simpler: Average SpO2 across all patients
 
         const buckets = {}; // "HH:00" -> [values]
 
@@ -102,21 +217,50 @@ const calculateAnalytics = async () => {
             ? Math.round(currentSpO2.reduce((acc, v) => acc + v.value, 0) / currentSpO2.length)
             : 98;
 
-        return {
+        const analyticsData = {
             trends: trendData,
             averageSpO2: avgSpO2,
             anomalyEvents: 3, // Keep mocked or derive from 'Critical' count in history
             totalPatients: patients.length
         };
 
+        cache.analytics = { data: analyticsData, timestamp: now };
+        return analyticsData;
+
     } catch (error) {
         console.error("Error calculating analytics:", error);
-        throw new Error('Failed to calculate analytics');
+        // Fallback mock data
+        return {
+            trends: [],
+            averageSpO2: 97,
+            anomalyEvents: 0,
+            totalPatients: 0
+        };
+    }
+};
+
+const markAlertAsResolved = async (alertId, patientId) => {
+    try {
+        if (!patientId) throw new Error("patientId is required to resolve alert in RTDB");
+
+        await rtdb.ref(`alerts/${patientId}/${alertId}`).update({
+            isRead: true,
+            resolvedAt: new Date().toISOString()
+        });
+
+        // Invalidate activity cache
+        cache.activity = { data: null, timestamp: 0 };
+        return { success: true };
+    } catch (error) {
+        console.error("Error resolving alert:", error);
+        throw error;
     }
 };
 
 module.exports = {
     computeStats,
     fetchActivityLog,
-    calculateAnalytics
+    fetchUnreadAlerts,
+    calculateAnalytics,
+    markAlertAsResolved
 };

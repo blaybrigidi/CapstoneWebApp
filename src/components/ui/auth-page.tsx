@@ -9,7 +9,6 @@ import {
 } from 'lucide-react';
 // import { Input } from './input'; // Can reuse the one we made, but the code in prompt used it inside form
 import { Input } from './input';
-import { cn } from '@/lib/utils';
 import { useAuth } from '@/context/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
 
@@ -20,13 +19,13 @@ export function AuthPage() {
     const { login } = useAuth();
     const navigate = useNavigate();
 
-    const handleLogin = async (e) => {
+    const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
         try {
             setLoading(true);
             await login(email, password);
             navigate('/');
-        } catch (error) {
+        } catch (error: any) {
             console.error("Login failed", error);
             alert("Login failed: " + error.message);
         } finally {
@@ -138,7 +137,7 @@ export function AuthPage() {
 
 
 
-const GoogleIcon = (props) => (
+const GoogleIcon = (props: React.SVGProps<SVGSVGElement>) => (
     <svg
         xmlns="http://www.w3.org/2000/svg"
         viewBox="0 0 24 24"

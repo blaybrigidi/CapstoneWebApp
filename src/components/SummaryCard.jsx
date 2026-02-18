@@ -1,5 +1,4 @@
 import React from 'react';
-import { motion } from 'framer-motion';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Activity, AlertTriangle, Users, FileText } from 'lucide-react';
 
@@ -26,10 +25,8 @@ const SummaryCard = ({ title, value, subtext, type = 'normal', icon, onClick = n
         <div className="relative">
           <Icon className={`h-4 w-4 ${isAlert ? 'text-red-500' : 'text-muted-foreground'}`} />
           {isAlert && (
-            <motion.div
-              className="absolute -top-1 -right-1 h-2 w-2 rounded-full bg-red-500"
-              animate={{ scale: [1, 1.5, 1], opacity: [0.7, 1, 0.7] }}
-              transition={{ duration: 1.5, repeat: Infinity }}
+            <div
+              className="absolute -top-1 -right-1 h-2 w-2 rounded-full bg-red-500 animate-pulse"
             />
           )}
         </div>

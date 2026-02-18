@@ -1,21 +1,31 @@
-import React, { useState } from 'react';
+import React, { useState, Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { AnimatePresence } from 'framer-motion';
+
 import { AuthProvider } from './context/AuthContext';
+import { AlertsProvider } from './context/AlertsContext';
 import RequireAuth from './components/RequireAuth';
 import { AuthPage } from './components/ui/auth-page';
 import { RegisterPage } from './components/ui/register-page';
+import AlertMonitor from './components/AlertMonitor';
+import { Toaster } from 'sonner';
 
-// Components
-import Sidebar from './components/Sidebar';
-import Dashboard from './components/Dashboard';
-import PatientDetail from './components/PatientDetail';
-import Settings from './components/Settings';
-import AlertsManagement from './components/AlertsManagement';
-import Analytics from './components/Analytics';
+// Lazy Load Components
+const Sidebar = React.lazy(() => import('./components/Sidebar'));
+const Dashboard = React.lazy(() => import('./components/Dashboard'));
+const PatientDetail = React.lazy(() => import('./components/PatientDetail'));
+const Patients = React.lazy(() => import('./components/Patients'));
+const Settings = React.lazy(() => import('./components/Settings').then(module => ({ default: module.Settings })));
+const AlertsManagement = React.lazy(() => import('./components/AlertsManagement'));
+const Analytics = React.lazy(() => import('./components/Analytics'));
+
 import './styles/variables.css';
 
-// Main App Layout (Authenticated)
+// Loading Fallback
+const PageLoader = () => (
+  <div className="flex items-center justify-center h-full w-full min-h-screen">
+    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+  </div>
+);
 const MainApp = () => {
   const [currentView, setCurrentView] = useState('dashboard');
   const [selectedPatientId, setSelectedPatientId] = useState(null);
@@ -29,10 +39,12 @@ const MainApp = () => {
 
   return (
     <div style={{ display: 'flex' }}>
-      <Sidebar onNavigate={handleNavigate} currentView={currentView} />
-      <AnimatePresence mode="wait">
+      <Suspense fallback={<PageLoader />}>
+        <Sidebar onNavigate={handleNavigate} currentView={currentView} />
         {currentView === 'dashboard' ? (
           <Dashboard key="dashboard" onNavigate={handleNavigate} />
+        ) : currentView === 'patients' ? (
+          <Patients key="patients" onNavigate={handleNavigate} />
         ) : currentView === 'settings' ? (
           <Settings key="settings" />
         ) : currentView === 'alerts' ? (
@@ -46,7 +58,7 @@ const MainApp = () => {
             patientId={selectedPatientId}
           />
         )}
-      </AnimatePresence>
+      </Suspense>
     </div>
   );
 };
@@ -54,22 +66,26 @@ const MainApp = () => {
 function App() {
   return (
     <AuthProvider>
-      <Router>
-        <Routes>
-          <Route path="/login" element={<AuthPage />} />
-          <Route path="/register" element={<RegisterPage />} />
+      <AlertsProvider>
+        <Router>
+          <Toaster position="top-right" />
+          <AlertMonitor />
+          <Routes>
+            <Route path="/login" element={<AuthPage />} />
+            <Route path="/register" element={<RegisterPage />} />
 
-          {/* Protected Routes */}
-          <Route
-            path="/*"
-            element={
-              <RequireAuth>
-                <MainApp />
-              </RequireAuth>
-            }
-          />
-        </Routes>
-      </Router>
+            {/* Protected Routes */}
+            <Route
+              path="/*"
+              element={
+                <RequireAuth>
+                  <MainApp />
+                </RequireAuth>
+              }
+            />
+          </Routes>
+        </Router>
+      </AlertsProvider>
     </AuthProvider>
   );
 }

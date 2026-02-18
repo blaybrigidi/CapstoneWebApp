@@ -24,6 +24,15 @@ const getRecentActivity = async (req, res, next) => {
     }
 };
 
+const getAlerts = async (req, res, next) => {
+    try {
+        const alerts = await dashboardService.fetchUnreadAlerts();
+        res.json(alerts);
+    } catch (error) {
+        next(error);
+    }
+};
+
 // @desc    Get analytics trends and aggregate data
 // @route   GET /api/dashboard/analytics
 // @access  Public
@@ -36,8 +45,26 @@ const getAnalytics = async (req, res, next) => {
     }
 };
 
+const resolveAlert = async (req, res, next) => {
+    try {
+        const { id } = req.params;
+        const { patientId } = req.body; // Expect patientId in body
+
+        if (!patientId) {
+            return res.status(400).json({ error: 'patientId is required' });
+        }
+
+        await dashboardService.markAlertAsResolved(id, patientId);
+        res.status(200).json({ success: true });
+    } catch (error) {
+        next(error);
+    }
+};
+
 module.exports = {
     getDashboardStats,
     getRecentActivity,
-    getAnalytics
+    getAnalytics,
+    getAlerts,
+    resolveAlert
 };

@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
 import { api } from '../services/api';
 import {
     Table,
@@ -9,8 +8,9 @@ import {
     TableHeader,
     TableRow,
 } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge"; // We might need to create this too
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const PatientList = ({ onNavigate, searchQuery = '', statusFilter = 'All' }) => {
     const [patients, setPatients] = useState([]);
@@ -25,10 +25,10 @@ const PatientList = ({ onNavigate, searchQuery = '', statusFilter = 'All' }) => 
                     id: p.id,
                     name: `${p.firstName} ${p.lastName}`,
                     hr: p.lastVitalsConfig?.heartRate || 72,
-                    hrTrend: { dir: 'stable', val: 0 }, // Mock trend for now
+                    hrTrend: { dir: 'stable', val: 0 },
                     spo2: p.lastVitalsConfig?.spO2 || 98,
                     spo2Trend: { dir: 'stable', val: 0 },
-                    temp: 36.5, // Mock temp as it wasn't in seed
+                    temp: 36.5,
                     status: p.status || 'Normal',
                     lastUpdate: p.updatedAt ? new Date(p.updatedAt).getTime() : Date.now(),
                     avatar: `${p.firstName[0]}${p.lastName[0]}`
@@ -63,21 +63,12 @@ const PatientList = ({ onNavigate, searchQuery = '', statusFilter = 'All' }) => 
         return result;
     }, [patients, searchQuery, statusFilter]);
 
-    const getFreshnessStatus = (timestamp) => {
-        const diff = Date.now() - timestamp;
-        const minutes = Math.floor(diff / 60000);
-        if (minutes < 2) return { text: 'Just now', color: 'text-green-600', dot: 'bg-green-600' };
-        if (minutes < 5) return { text: `${minutes} min ago`, color: 'text-yellow-600', dot: 'bg-yellow-600' };
-        if (minutes >= 60) return { text: 'Offline', color: 'text-red-500', isOffline: true };
-        return { text: `${minutes} min ago`, color: 'text-red-500', dot: 'bg-red-500' };
-    };
+    if (loading) {
+        return <PatientListSkeleton />;
+    }
 
     return (
-        <motion.div
-            className="rounded-xl border border-border bg-card shadow-sm overflow-hidden"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-        >
+        <div className="rounded-xl border border-border bg-card shadow-sm overflow-hidden">
             <Table>
                 <TableHeader className="bg-muted/50">
                     <TableRow>
@@ -91,75 +82,13 @@ const PatientList = ({ onNavigate, searchQuery = '', statusFilter = 'All' }) => 
                     </TableRow>
                 </TableHeader>
                 <TableBody>
-                    <AnimatePresence mode="popLayout">
-                        {filteredPatients.map((patient) => {
-                            const freshness = getFreshnessStatus(patient.lastUpdate);
-                            const isCritical = patient.status === 'Critical';
-
-                            return (
-                                <motion.tr
-                                    key={patient.id}
-                                    variants={{
-                                        hidden: { opacity: 0, x: -10 },
-                                        visible: { opacity: 1, x: 0 },
-                                        exit: { opacity: 0, height: 0 }
-                                    }}
-                                    initial="hidden"
-                                    animate="visible"
-                                    exit="exit"
-                                    className={`
-                                        border-b transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted
-                                        ${isCritical ? 'bg-red-50/50 hover:bg-red-50/80 border-l-4 border-l-red-500' : 'border-l-4 border-l-transparent'}
-                                    `}
-                                    onClick={() => onNavigate('patient-detail', patient.id)}
-                                >
-                                    <TableCell>
-                                        <div className="flex items-center gap-3">
-                                            <div className="h-9 w-9 rounded-full bg-muted flex items-center justify-center font-bold text-muted-foreground text-xs">
-                                                {patient.avatar}
-                                            </div>
-                                            <div className="flex flex-col">
-                                                <span className="font-semibold text-foreground">{patient.name}</span>
-                                                <span className="text-xs text-muted-foreground">ID: {1000 + patient.id}</span>
-                                            </div>
-                                        </div>
-                                    </TableCell>
-                                    <TableCell>
-                                        <VitalCell value={`${patient.hr} bpm`} trend={patient.hrTrend} />
-                                    </TableCell>
-                                    <TableCell>
-                                        <VitalCell value={`${patient.spo2}%`} trend={patient.spo2Trend} />
-                                    </TableCell>
-                                    <TableCell>
-                                        <span className="font-medium">{patient.temp}°C</span>
-                                    </TableCell>
-                                    <TableCell>
-                                        <StatusBadge status={patient.status} />
-                                    </TableCell>
-                                    <TableCell>
-                                        {freshness.isOffline ? (
-                                            <span className="inline-flex items-center rounded-md bg-gray-100 px-2 py-1 text-xs font-medium text-gray-600 ring-1 ring-inset ring-gray-500/10">
-                                                OFFLINE
-                                            </span>
-                                        ) : (
-                                            <div className="flex items-center gap-2">
-                                                <div className={`h-1.5 w-1.5 rounded-full ${freshness.dot}`} />
-                                                <span className={`text-xs ${freshness.color}`}>{freshness.text}</span>
-                                            </div>
-                                        )}
-                                    </TableCell>
-                                    <TableCell>
-                                        <Button
-                                            size="sm"
-                                            onClick={(e) => { e.stopPropagation(); onNavigate('patient-detail', patient.id); }}
-                                        >
-                                            Details
-                                        </Button>
-                                    </TableCell>
-                                </motion.tr>
-                            );
-                        })}
-                    </AnimatePresence>
+                    {filteredPatients.map((patient) => (
+                        <PatientRow
+                            key={patient.id}
+                            initialData={patient}
+                            onNavigate={onNavigate}
+                        />
+                    ))}
                 </TableBody>
             </Table>
             {filteredPatients.length === 0 && (
@@ -167,22 +96,104 @@ const PatientList = ({ onNavigate, searchQuery = '', statusFilter = 'All' }) => 
                     No patients found matching your search.
                 </div>
             )}
-        </motion.div>
+        </div>
     );
 };
 
-// Helper component for Vital signs with trends
-const VitalCell = ({ value, trend }) => (
-    <div>
-        <div className="font-medium text-foreground">{value}</div>
-        {trend && trend.dir !== 'stable' && (
-            <div className={`text-xs flex items-center gap-0.5 ${trend.dir === 'up' && trend.val > 0 ? 'text-red-500' : 'text-green-600'}`}>
-                <span>{trend.dir === 'up' ? '↑' : '↓'}</span>
-                <span>{trend.val}</span>
-            </div>
-        )}
-    </div>
-);
+const PatientRow = ({ initialData, onNavigate }) => {
+    const [data, setData] = useState(initialData);
+
+    useEffect(() => {
+        // Subscribe to real-time updates for this patient
+        const unsubscribe = api.subscribeToVitals(initialData.id, (reading) => {
+            if (!reading) return;
+
+            // Map ML risk to status
+            // risk: "stable" | "warning" | "high_risk"
+            // status: "Normal" | "Warning" | "Critical"
+            let newStatus = 'Normal';
+            if (reading.instability_risk === 'warning') newStatus = 'Warning';
+            if (reading.instability_risk === 'high_risk') newStatus = 'Critical';
+
+            setData(prev => ({
+                ...prev,
+                hr: reading.heart_rate || prev.hr,
+                spo2: reading.spo2 || prev.spo2,
+                temp: reading.temperature || prev.temp,
+                status: newStatus,
+                lastUpdate: new Date(reading.timestamp).getTime()
+            }));
+        });
+
+        return () => unsubscribe();
+    }, [initialData.id]);
+
+    const freshness = getFreshnessStatus(data.lastUpdate);
+    const isCritical = data.status === 'Critical';
+
+    return (
+        <TableRow
+            className={`
+                border-b transition-colors hover:bg-muted/50 cursor-pointer
+                ${isCritical ? 'bg-red-50/50 hover:bg-red-50/80 border-l-4 border-l-red-500' : 'border-l-4 border-l-transparent'}
+            `}
+            onClick={() => onNavigate('patient-detail', data.id)}
+        >
+            <TableCell>
+                <div className="flex items-center gap-3">
+                    <div className="h-9 w-9 rounded-full bg-muted flex items-center justify-center font-bold text-muted-foreground text-xs">
+                        {data.avatar}
+                    </div>
+                    <div className="flex flex-col">
+                        <span className="font-semibold text-foreground">{data.name}</span>
+                        <span className="text-xs text-muted-foreground">ID: {1000 + String(data.id)}</span>
+                    </div>
+                </div>
+            </TableCell>
+            <TableCell>
+                <div className="font-medium text-foreground">{data.hr} bpm</div>
+            </TableCell>
+            <TableCell>
+                <div className="font-medium text-foreground">{data.spo2}%</div>
+            </TableCell>
+            <TableCell>
+                <span className="font-medium">{data.temp}°C</span>
+            </TableCell>
+            <TableCell>
+                <StatusBadge status={data.status} />
+            </TableCell>
+            <TableCell>
+                {freshness.isOffline ? (
+                    <span className="inline-flex items-center rounded-md bg-gray-100 px-2 py-1 text-xs font-medium text-gray-600 ring-1 ring-inset ring-gray-500/10">
+                        OFFLINE
+                    </span>
+                ) : (
+                    <div className="flex items-center gap-2">
+                        <div className={`h-1.5 w-1.5 rounded-full ${freshness.dot}`} />
+                        <span className={`text-xs ${freshness.color}`}>{freshness.text}</span>
+                    </div>
+                )}
+            </TableCell>
+            <TableCell>
+                <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={(e) => { e.stopPropagation(); onNavigate('patient-detail', data.id); }}
+                >
+                    Details
+                </Button>
+            </TableCell>
+        </TableRow>
+    );
+};
+
+const getFreshnessStatus = (timestamp) => {
+    const diff = Date.now() - timestamp;
+    const minutes = Math.floor(diff / 60000);
+    if (minutes < 2) return { text: 'Just now', color: 'text-green-600', dot: 'bg-green-600' };
+    if (minutes < 60) return { text: `${minutes} min ago`, color: 'text-yellow-600', dot: 'bg-yellow-600' };
+    return { text: 'Offline', color: 'text-red-500', isOffline: true };
+};
 
 const StatusBadge = ({ status }) => {
     let classes = "bg-green-100 text-green-700 hover:bg-green-100/80";
@@ -190,12 +201,51 @@ const StatusBadge = ({ status }) => {
     if (status === 'Critical') classes = "bg-red-100 text-red-700 border border-red-200 hover:bg-red-100/80";
 
     return (
-        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 ${classes}`}>
+        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold transition-colors ${classes}`}>
             {status === 'Critical' && <span className="mr-1.5 h-1.5 w-1.5 rounded-full bg-red-600" />}
             {status}
         </span>
     );
 };
+
+const PatientListSkeleton = () => (
+    <div className="rounded-xl border border-border bg-card shadow-sm overflow-hidden">
+        <Table>
+            <TableHeader className="bg-muted/50">
+                <TableRow>
+                    <TableHead className="w-[30%]">PATIENT NAME</TableHead>
+                    <TableHead>HEART RATE</TableHead>
+                    <TableHead>SpO2</TableHead>
+                    <TableHead>TEMP</TableHead>
+                    <TableHead>STATUS</TableHead>
+                    <TableHead>LAST UPDATE</TableHead>
+                    <TableHead>ACTIONS</TableHead>
+                </TableRow>
+            </TableHeader>
+            <TableBody>
+                {[...Array(5)].map((_, i) => (
+                    <TableRow key={i} className="border-b">
+                        <TableCell>
+                            <div className="flex items-center gap-3">
+                                <Skeleton className="h-9 w-9 rounded-full" />
+                                <div className="flex flex-col gap-1">
+                                    <Skeleton className="h-4 w-32" />
+                                    <Skeleton className="h-3 w-20" />
+                                </div>
+                            </div>
+                        </TableCell>
+                        <TableCell><Skeleton className="h-4 w-16" /></TableCell>
+                        <TableCell><Skeleton className="h-4 w-16" /></TableCell>
+                        <TableCell><Skeleton className="h-4 w-16" /></TableCell>
+                        <TableCell><Skeleton className="h-5 w-20 rounded-full" /></TableCell>
+                        <TableCell><Skeleton className="h-4 w-24" /></TableCell>
+                        <TableCell><Skeleton className="h-8 w-16" /></TableCell>
+                    </TableRow>
+                ))}
+            </TableBody>
+        </Table>
+    </div>
+);
 
 export default PatientList;
 

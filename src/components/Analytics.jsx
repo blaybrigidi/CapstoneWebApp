@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { Loader2 } from 'lucide-react';
 import { api } from '../services/api';
 
 const Analytics = () => {
@@ -28,33 +28,26 @@ const Analytics = () => {
         fetchAnalytics();
     }, []);
 
-    // Animation Variants
-    const containerVariants = {
-        hidden: { opacity: 0 },
-        visible: {
-            opacity: 1,
-            transition: { staggerChildren: 0.1 }
-        },
-        exit: { opacity: 0 }
-    };
-
-    const itemVariants = {
-        hidden: { opacity: 0, y: 20 },
-        visible: { opacity: 1, y: 0, transition: { type: 'spring', stiffness: 300, damping: 24 } }
-    };
-
     if (loading) {
-        return <div style={{ marginLeft: '280px', padding: '40px' }}>Loading analytics...</div>;
+        return (
+            <div style={{
+                marginLeft: '280px',
+                width: 'calc(100% - 280px)',
+                height: '100vh',
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'center',
+                alignItems: 'center',
+                gap: '16px'
+            }}>
+                <Loader2 className="h-12 w-12 animate-spin text-primary" />
+                <p className="text-muted-foreground text-lg font-medium">Loading analytics...</p>
+            </div>
+        );
     }
 
     return (
-        <motion.main
-            style={styles.main}
-            initial="hidden"
-            animate="visible"
-            exit="exit"
-            variants={containerVariants}
-        >
+        <main style={styles.main}>
             <header style={styles.header}>
                 <h1 style={styles.title}>Analytics</h1>
                 <p style={styles.subtitle}>Global health trends and system-wide performance metrics.</p>
@@ -62,7 +55,7 @@ const Analytics = () => {
 
             <div style={styles.bentoGrid}>
                 {/* Left Column: Massive Chart (3fr) */}
-                <motion.section style={styles.chartCard} variants={itemVariants}>
+                <section style={styles.chartCard}>
                     <div style={styles.cardHeader}>
                         <h2 style={styles.cardTitle}>Global Health Trends</h2>
                         <span style={styles.cardSubtitle}>Average SpO2 (Last 24 Hours)</span>
@@ -110,13 +103,12 @@ const Analytics = () => {
                             </AreaChart>
                         </ResponsiveContainer>
                     </div>
-                </motion.section>
+                </section>
 
                 {/* Right Column: Key Metrics Stack (1fr) */}
                 <div style={styles.metricsColumn}>
                     <MetricCard
                         title="Anomaly Probability"
-                        variants={itemVariants}
                     >
                         <div style={styles.gaugeContainer}>
                             <CircularGauge value={12} />
@@ -129,23 +121,21 @@ const Analytics = () => {
                         title="Average SpO2"
                         value={`${stats.averageSpO2}%`}
                         subtext="Stable trend"
-                        variants={itemVariants}
                     />
                     <MetricCard
                         title="Critical Events"
                         value={stats.anomalyEvents}
                         subtext="Last 24 hours"
-                        variants={itemVariants}
                         isCritical
                     />
                 </div>
             </div>
-        </motion.main>
+        </main>
     );
 };
 
-const MetricCard = ({ title, value, subtext, variants, isCritical, children }) => (
-    <motion.div style={styles.metricCard} variants={variants}>
+const MetricCard = ({ title, value, subtext, isCritical, children }) => (
+    <div style={styles.metricCard}>
         <h3 style={styles.metricTitle}>{title}</h3>
         {children ? children : (
             <>
@@ -155,7 +145,7 @@ const MetricCard = ({ title, value, subtext, variants, isCritical, children }) =
                 <span style={styles.metricSubtext}>{subtext}</span>
             </>
         )}
-    </motion.div>
+    </div>
 );
 
 const CircularGauge = ({ value }) => {
@@ -176,7 +166,7 @@ const CircularGauge = ({ value }) => {
                     strokeWidth="6"
                 />
                 {/* Progress Circle */}
-                <motion.circle
+                <circle
                     cx="50"
                     cy="50"
                     r={radius}
@@ -184,10 +174,11 @@ const CircularGauge = ({ value }) => {
                     stroke="#000000"
                     strokeWidth="6"
                     strokeLinecap="round"
-                    initial={{ strokeDashoffset: circumference }}
-                    animate={{ strokeDashoffset: offset }}
-                    transition={{ duration: 1.5, ease: "easeOut" }}
-                    style={{ strokeDasharray: circumference }}
+                    style={{
+                        strokeDasharray: circumference,
+                        strokeDashoffset: offset,
+                        transition: 'stroke-dashoffset 1.5s ease-out'
+                    }}
                 />
             </svg>
             <div style={{ position: 'absolute', fontSize: '1.2rem', fontWeight: 'bold' }}>

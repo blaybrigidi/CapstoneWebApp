@@ -1,5 +1,5 @@
 import React from 'react';
-import { motion } from 'framer-motion';
+
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Activity, Heart, Thermometer } from 'lucide-react';
 
@@ -45,18 +45,6 @@ const LiveVitalCard = ({ label, value, unit, status }) => {
     );
 };
 
-fontWeight: 'var(--font-weight-medium)',
-    },
-footer: {
-    marginTop: 'auto',
-    },
-status: {
-    display: 'inline-block',
-        padding: '6px 12px',
-            borderRadius: '100px',
-                fontSize: '0.8rem',
-                    fontWeight: '600',
-    }
-};
+
 
 export default LiveVitalCard;

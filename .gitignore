@@ -32,4 +32,4 @@ serviceAccountKey.json
 
 *.pem
 *.key
-*.p12
+*.p12backend/config/serviceAccountKey.json

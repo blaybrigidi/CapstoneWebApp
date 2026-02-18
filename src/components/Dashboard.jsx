@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import SummaryCard from './SummaryCard';
-import { motion } from 'framer-motion';
+import AlertsDropdown from './AlertsDropdown';
 import PatientList from './PatientList';
 import RecentActivity from './RecentActivity';
 import { api } from '../services/api';
@@ -72,39 +72,14 @@ const Dashboard = ({ onNavigate }) => {
         },
     ];
 
-    const containerVariants = {
-        hidden: { opacity: 0 },
-        visible: {
-            opacity: 1,
-            transition: {
-                staggerChildren: 0.1,
-                delayChildren: 0.1
-            }
-        }
-    };
-
-    const itemVariants = {
-        hidden: { opacity: 0, y: 20 },
-        visible: {
-            opacity: 1,
-            y: 0,
-            transition: { type: 'spring', stiffness: 300, damping: 24 }
-        }
-    };
-
     return (
-        <motion.main
-            className="ml-[280px] p-8 min-h-screen max-w-[1600px]"
-            initial="hidden"
-            animate="visible"
-            exit={{ opacity: 0, transition: { duration: 0.2 } }}
-            variants={containerVariants}
-        >
-            <motion.header className="mt-8 mb-12 flex justify-between items-baseline" variants={itemVariants}>
+        <main className="ml-[280px] p-8 min-h-screen max-w-[1600px]">
+            <header className="mt-8 mb-12 flex justify-between items-baseline">
                 <h1 className="text-5xl font-extrabold tracking-tight leading-none text-foreground">
                     Patient Overview
                 </h1>
-                <div className="flex gap-4">
+                <div className="flex gap-4 items-center">
+                    <AlertsDropdown />
                     <Button
                         className="rounded-full px-8 py-6 text-md font-medium shadow-lg hover:shadow-xl transition-all"
                         onClick={() => {/* no-op for demo */ }}
@@ -112,16 +87,12 @@ const Dashboard = ({ onNavigate }) => {
                         + New Patient
                     </Button>
                 </div>
-            </motion.header>
+            </header>
 
             {/* Summary Cards */}
             <section className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 mb-12">
                 {statsCards.map((stat, index) => (
-                    <motion.div
-                        key={index}
-                        variants={itemVariants}
-                        whileHover={stat.action ? { y: -5 } : {}}
-                    >
+                    <div key={index} className="transition-transform hover:-translate-y-1">
                         <SummaryCard
                             title={stat.title}
                             value={stat.value}
@@ -131,13 +102,13 @@ const Dashboard = ({ onNavigate }) => {
                             onClick={stat.action}
                             isActive={false}
                         />
-                    </motion.div>
+                    </div>
                 ))}
             </section>
 
             {/* Content Area: Patient List + Sidebar */}
             <div className="grid grid-cols-1 lg:grid-cols-4 gap-8 items-start">
-                <motion.div className="lg:col-span-3 flex flex-col gap-6" variants={itemVariants}>
+                <div className="lg:col-span-3 flex flex-col gap-6">
 
                     {/* Search and Filter Bar */}
                     <div className="flex justify-between items-center pb-2">
@@ -168,13 +139,13 @@ const Dashboard = ({ onNavigate }) => {
                         searchQuery={searchQuery}
                         statusFilter={statusFilter}
                     />
-                </motion.div>
+                </div>
 
-                <motion.div className="lg:col-span-1 flex flex-col" variants={itemVariants}>
+                <div className="lg:col-span-1 flex flex-col">
                     <RecentActivity onNavigate={onNavigate} />
-                </motion.div>
+                </div>
             </div>
-        </motion.main>
+        </main>
     );
 };
 

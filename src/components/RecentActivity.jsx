@@ -1,5 +1,4 @@
 import React from 'react';
-import { motion } from 'framer-motion';
 
 const RecentActivity = ({ onNavigate }) => {
     const activities = [
@@ -14,10 +13,9 @@ const RecentActivity = ({ onNavigate }) => {
             <h3 style={styles.header}>Recent Activity</h3>
             <div style={styles.list}>
                 {activities.map((activity, index) => (
-                    <motion.div
+                    <div
                         key={activity.id}
                         style={styles.item}
-                        whileHover={{ x: 4, backgroundColor: 'var(--color-bg-active)' }}
                         onClick={() => activity.link && onNavigate(activity.link.view, activity.link.id)}
                     >
                         <div style={styles.dotContainer}>
@@ -32,14 +30,13 @@ const RecentActivity = ({ onNavigate }) => {
                             <p style={styles.text}>{activity.text}</p>
                             <span style={styles.time}>{activity.time}</span>
                         </div>
-                    </motion.div>
+                    </div>
                 ))}
             </div>
         </div>
     );
 };
 
-// Fix for index undefined in map
 const styles = {
     container: {
         backgroundColor: 'var(--color-bg-surface)',

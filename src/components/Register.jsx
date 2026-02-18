@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { motion } from 'framer-motion';
 import { Link, useNavigate } from 'react-router-dom';
 
 const Register = () => {
@@ -51,12 +50,7 @@ const Register = () => {
 
     return (
         <div style={styles.container}>
-            <motion.div
-                style={styles.card}
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ duration: 0.5 }}
-            >
+            <div style={styles.card}>
                 <h2 style={styles.title}>Create Account</h2>
                 <p style={styles.subtitle}>Join DialLog Health Portal</p>
 
@@ -133,7 +127,7 @@ const Register = () => {
                 <div style={styles.footer}>
                     Already have an account? <Link to="/login" style={styles.link}>Sign In</Link>
                 </div>
-            </motion.div>
+            </div>
         </div>
     );
 };

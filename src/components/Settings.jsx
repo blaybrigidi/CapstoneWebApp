@@ -1,35 +1,42 @@
-import React, { useState } from 'react';
-import { motion } from 'framer-motion';
+import React, { useState, useEffect } from 'react';
+import { useAlerts } from '../context/AlertsContext';
 
-const Settings = () => {
-    const [thresholds, setThresholds] = useState({
-        hrMin: 60,
-        hrMax: 100,
-        spo2Min: 95,
-        tempMax: 37.5
-    });
+export const Settings = () => {
+    const { thresholds: contextThresholds, updateThresholds } = useAlerts();
+    const [localThresholds, setLocalThresholds] = useState(contextThresholds);
+    const [saved, setSaved] = useState(false);
+
+    // Sync local state when context changes (e.g. initial load)
+    useEffect(() => {
+        if (contextThresholds) {
+            // eslint-disable-next-line react-hooks/set-state-in-effect
+            setLocalThresholds(prev => {
+                // Prevent infinite loop by checking if values actually changed
+                if (JSON.stringify(prev) !== JSON.stringify(contextThresholds)) {
+                    return contextThresholds;
+                }
+                return prev;
+            });
+        }
+    }, [contextThresholds]);
 
     const handleChange = (e) => {
         const { name, value } = e.target;
-        setThresholds(prev => ({
+        setLocalThresholds(prev => ({
             ...prev,
             [name]: parseFloat(value)
         }));
+        setSaved(false);
     };
 
     const handleSave = () => {
-        // In a real app, this would save to backend/context
-        alert('Alert thresholds saved successfully.');
+        updateThresholds(localThresholds);
+        setSaved(true);
+        setTimeout(() => setSaved(false), 3000);
     };
 
     return (
-        <motion.main
-            style={styles.main}
-            initial={{ opacity: 0, x: 50 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -50 }}
-            transition={{ type: 'tween', ease: 'easeOut', duration: 0.3 }}
-        >
+        <main style={styles.main}>
             <header style={styles.header}>
                 <h1 style={styles.title}>Alert Thresholds</h1>
                 <p style={styles.description}>
@@ -46,7 +53,7 @@ const Settings = () => {
                             <input
                                 type="number"
                                 name="hrMin"
-                                value={thresholds.hrMin}
+                                value={localThresholds?.hrMin || ''}
                                 onChange={handleChange}
                                 style={styles.input}
                             />
@@ -56,7 +63,7 @@ const Settings = () => {
                             <input
                                 type="number"
                                 name="hrMax"
-                                value={thresholds.hrMax}
+                                value={localThresholds?.hrMax || ''}
                                 onChange={handleChange}
                                 style={styles.input}
                             />
@@ -73,7 +80,7 @@ const Settings = () => {
                         <input
                             type="number"
                             name="spo2Min"
-                            value={thresholds.spo2Min}
+                            value={localThresholds?.spo2Min || ''}
                             onChange={handleChange}
                             style={styles.input}
                             max="100"
@@ -90,7 +97,7 @@ const Settings = () => {
                         <input
                             type="number"
                             name="tempMax"
-                            value={thresholds.tempMax}
+                            value={localThresholds?.tempMax || ''}
                             onChange={handleChange}
                             style={styles.input}
                             step="0.1"
@@ -99,12 +106,19 @@ const Settings = () => {
                 </div>
 
                 <div style={styles.actions}>
-                    <button onClick={handleSave} style={styles.saveButton}>
-                        Save Thresholds
+                    <button
+                        onClick={handleSave}
+                        style={{
+                            ...styles.saveButton,
+                            backgroundColor: saved ? '#4CAF50' : 'var(--color-text-primary)'
+                        }}
+                        disabled={saved}
+                    >
+                        {saved ? 'Saved!' : 'Save Thresholds'}
                     </button>
                 </div>
             </section>
-        </motion.main>
+        </main>
     );
 };
 
@@ -189,5 +203,3 @@ const styles = {
         transition: 'opacity 0.2s',
     }
 };
-
-export default Settings;

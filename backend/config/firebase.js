@@ -8,25 +8,37 @@ dotenv.config();
 // For now, we'll try to use the environment variables or a path to the key
 
 try {
-    let serviceAccount;
     if (process.env.FIREBASE_SERVICE_ACCOUNT_PATH) {
+        console.log(`[FirebaseConfig] Loading key from ENV: ${process.env.FIREBASE_SERVICE_ACCOUNT_PATH}`);
         serviceAccount = require(process.env.FIREBASE_SERVICE_ACCOUNT_PATH);
-    } else if (!process.env.GOOGLE_APPLICATION_CREDENTIALS) {
-        // Fallback or development mock instructions
-        console.warn("⚠️ No FIREBASE_SERVICE_ACCOUNT_PATH or GOOGLE_APPLICATION_CREDENTIALS found in .env. using default app credentials if available, or this may fail.");
+    } else if (process.env.GOOGLE_APPLICATION_CREDENTIALS) {
+        console.log(`[FirebaseConfig] Loading key from GOOGLE_APPLICATION_CREDENTIALS: ${process.env.GOOGLE_APPLICATION_CREDENTIALS}`);
+        // Google Cloud SDK handles this env var automatically for applicationDefault(),
+        // but if we want to explicitly load it for Admin SDK cert, we can:
+        try {
+            serviceAccount = require(process.env.GOOGLE_APPLICATION_CREDENTIALS);
+        } catch (e) {
+            console.error("[FirebaseConfig] Failed to load key file:", e.message);
+        }
+    } else {
+        console.warn("⚠️ No FIREBASE_SERVICE_ACCOUNT_PATH or GOOGLE_APPLICATION_CREDENTIALS found.");
     }
+
+    const dbUrl = process.env.FIREBASE_DATABASE_URL || "https://diallog-78c08-default-rtdb.firebaseio.com";
+    console.log(`[FirebaseConfig] Using Database URL: ${dbUrl}`);
 
     if (!admin.apps.length) {
         admin.initializeApp({
             credential: serviceAccount ? admin.credential.cert(serviceAccount) : admin.credential.applicationDefault(),
-            // databaseURL: "https://your-project-id.firebaseio.com" // Only needed for Realtime DB
+            databaseURL: dbUrl
         });
+        console.log("[FirebaseConfig] Firebase Admin Initialized");
     }
 } catch (error) {
     console.error("Firebase Admin Initialization Error:", error);
 }
 
 const db = admin.firestore();
-// const rtdb = admin.database(); // Removed as it requires databaseURL
+const rtdb = admin.database();
 
-module.exports = { admin, db };
+module.exports = { admin, db, rtdb };

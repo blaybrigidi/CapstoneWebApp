@@ -26,7 +26,7 @@ const Sidebar = ({ onNavigate, currentView = 'dashboard' }) => {
                   href="#"
                   onClick={(e) => {
                     e.preventDefault();
-                    if (item.id === 'dashboard' || item.id === 'settings' || item.id === 'alerts' || item.id === 'analytics') {
+                    if (item.id === 'dashboard' || item.id === 'settings' || item.id === 'alerts' || item.id === 'analytics' || item.id === 'patients') {
                       onNavigate(item.id);
                     }
                   }}

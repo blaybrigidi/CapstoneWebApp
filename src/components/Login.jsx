@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { motion } from 'framer-motion';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 
 const Login = () => {
     const [email, setEmail] = useState('');
@@ -27,12 +26,7 @@ const Login = () => {
 
     return (
         <div style={styles.container}>
-            <motion.div
-                style={styles.card}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5 }}
-            >
+            <div style={styles.card}>
                 <div style={styles.logoContainer}>
                     <div style={styles.logoIcon}>+</div>
                     <h2 style={styles.title}>DialLog</h2>
@@ -71,7 +65,7 @@ const Login = () => {
                 <div style={styles.footer}>
                     Need an account? <Link to="/register" style={styles.link}>Register now</Link>
                 </div>
-            </motion.div>
+            </div>
         </div>
     );
 };

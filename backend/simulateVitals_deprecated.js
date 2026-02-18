@@ -3,7 +3,7 @@ const dotenv = require('dotenv');
 
 dotenv.config();
 
-const INTERVAL_MS = 5000; // 5 seconds
+const INTERVAL_MS = 10000; // 10 seconds
 
 console.log(`Starting Vitals Simulator (Interval: ${INTERVAL_MS}ms)...`);
 console.log('Press Ctrl+C to stop.');

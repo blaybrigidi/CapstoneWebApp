@@ -25,14 +25,14 @@ export function RegisterPage() {
     const { register } = useAuth();
     const navigate = useNavigate();
 
-    const handleChange = (e) => {
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setFormData({
             ...formData,
             [e.target.name]: e.target.value
         });
     };
 
-    const formatPhoneNumber = (phone) => {
+    const formatPhoneNumber = (phone: string) => {
         // Remove all non-digit characters
         const cleaned = phone.replace(/\D/g, '');
         // If it starts with 1 and is 11 digits, add +
@@ -52,7 +52,7 @@ export function RegisterPage() {
         return `+${cleaned}`;
     };
 
-    const handleRegister = async (e) => {
+    const handleRegister = async (e: React.FormEvent) => {
         e.preventDefault();
 
         if (formData.password !== formData.confirmPassword) {
@@ -70,7 +70,7 @@ export function RegisterPage() {
                 formattedPhone
             );
             navigate('/');
-        } catch (error) {
+        } catch (error: any) {
             console.error("Registration failed", error);
             alert("Registration failed: " + error.message);
         } finally {

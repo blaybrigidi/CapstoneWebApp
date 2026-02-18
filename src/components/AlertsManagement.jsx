@@ -1,25 +1,39 @@
-import React, { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import React, { useState, useEffect } from 'react';
+import { api } from '../services/api';
 
 const AlertsManagement = ({ filter }) => {
-    // Mock Alerts Data
-    const [alerts, setAlerts] = useState([
-        { id: 1, type: 'critical', patient: 'James Koomson', vital: 'SpO2', value: '82%', time: '2 mins ago' },
-        { id: 2, type: 'warning', patient: 'Maame Annor', vital: 'Heart Rate', value: '145 bpm', time: '15 mins ago' },
-        { id: 3, type: 'info', patient: 'System', vital: 'Calibration', value: 'Complete', time: '1 hour ago' },
-        { id: 4, type: 'warning', patient: 'Sipa Blay', vital: 'Temp', value: '38.2°C', time: '3 hours ago' },
-        { id: 5, type: 'critical', patient: 'Joshua Davids', vital: 'Heart Rate', value: '45 bpm', time: '4 hours ago' },
-        { id: 6, type: 'info', patient: 'System', vital: 'Update', value: 'Patch v2.1', time: '5 hours ago' },
-        { id: 7, type: 'warning', patient: 'Nana Owusu', vital: 'BP', value: '140/90', time: '6 hours ago' },
-        { id: 8, type: 'critical', patient: 'Ackah Nyamike', vital: 'Battery', value: 'Low (5%)', time: '7 hours ago' },
-    ]);
+    const [alerts, setAlerts] = useState([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchAlerts = async () => {
+            try {
+                const data = await api.getAlerts();
+                setAlerts(data);
+            } catch (error) {
+                console.error("Failed to load alerts", error);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchAlerts();
+        const interval = setInterval(fetchAlerts, 10000); // Poll every 10s
+        return () => clearInterval(interval);
+    }, []);
 
     const filteredAlerts = filter
         ? alerts.filter(a => a.type === filter.toLowerCase())
         : alerts;
 
-    const handleResolve = (id) => {
-        setAlerts(prev => prev.filter(alert => alert.id !== id));
+    const handleResolve = async (id, patientId) => {
+        try {
+            await api.resolveAlert(id, patientId);
+            setAlerts(prev => prev.filter(alert => alert.id !== id));
+        } catch (error) {
+            console.error("Failed to resolve alert:", error);
+            // Optionally show toast error
+        }
     };
 
     // Threshold State (similar to Settings)
@@ -54,28 +68,8 @@ const AlertsManagement = ({ filter }) => {
         alert('Threshold configurations saved.');
     };
 
-    // Animation Variants
-    const containerVariants = {
-        hidden: { opacity: 0 },
-        visible: {
-            opacity: 1,
-            transition: { staggerChildren: 0.15 }
-        }
-    };
-
-    const itemVariants = {
-        hidden: { opacity: 0, y: 20 },
-        visible: { opacity: 1, y: 0, transition: { type: 'spring', stiffness: 300, damping: 24 } }
-    };
-
     return (
-        <motion.main
-            style={styles.main}
-            initial="hidden"
-            animate="visible"
-            exit={{ opacity: 0, transition: { duration: 0.2 } }}
-            variants={containerVariants}
-        >
+        <main style={styles.main}>
             <header style={styles.header}>
                 <h1 style={styles.title}>Alerts & Thresholds</h1>
                 <p style={styles.subtitle}>Monitor live incidents and configure safety triggers.</p>
@@ -83,55 +77,48 @@ const AlertsManagement = ({ filter }) => {
 
             <div style={styles.bentoGrid}>
                 {/* Left Panel - Live Alert Feed (60%) */}
-                <motion.section style={styles.feedPanel} variants={itemVariants}>
+                <section style={styles.feedPanel}>
                     <h2 style={styles.panelTitle}>Live Alert Feed</h2>
                     <div style={styles.feedList}>
-                        <AnimatePresence mode='popLayout'>
-                            {filteredAlerts.map(alert => (
-                                <motion.div
-                                    key={alert.id}
-                                    layout
-                                    initial={{ opacity: 0, scale: 0.95 }}
-                                    animate={{ opacity: 1, scale: 1 }}
-                                    exit={{ opacity: 0, height: 0, marginBottom: 0, overflow: 'hidden' }}
-                                    transition={{ duration: 0.3 }}
-                                    style={styles.alertCard}
-                                >
-                                    <div style={styles.cardHeader}>
-                                        <div style={styles.patientInfo}>
-                                            {/* Visual Cue */}
-                                            <div style={styles.statusIndicator}>
-                                                {alert.type === 'critical' && (
-                                                    <span className="pulse-dot-critical" style={styles.pulseDotCritical}></span>
-                                                )}
-                                                {alert.type === 'warning' && (
-                                                    <span style={styles.dotWarning}></span>
-                                                )}
-                                                <span style={styles.patientName}>{alert.patient}</span>
-                                            </div>
-                                            <span style={styles.time}>{alert.time}</span>
+                        {filteredAlerts.map(alert => (
+                            <div
+                                key={alert.id}
+                                style={styles.alertCard}
+                            >
+                                <div style={styles.cardHeader}>
+                                    <div style={styles.patientInfo}>
+                                        {/* Visual Cue */}
+                                        <div style={styles.statusIndicator}>
+                                            {alert.type === 'critical' && (
+                                                <span className="pulse-dot-critical" style={styles.pulseDotCritical}></span>
+                                            )}
+                                            {alert.type === 'warning' && (
+                                                <span style={styles.dotWarning}></span>
+                                            )}
+                                            <span style={styles.patientName}>{alert.patient}</span>
                                         </div>
-                                        <button
-                                            onClick={() => handleResolve(alert.id)}
-                                            style={styles.resolveButton}
-                                        >
-                                            Mark as Resolved
-                                        </button>
+                                        <span style={styles.time}>{alert.time}</span>
                                     </div>
-                                    <div style={styles.cardContent}>
-                                        <div style={styles.vitalRow}>
-                                            <span style={styles.vitalLabel}>{alert.vital}</span>
-                                            <span style={styles.vitalValue}>{alert.value}</span>
-                                        </div>
+                                    <button
+                                        onClick={() => handleResolve(alert.id, alert.patientId)}
+                                        style={styles.resolveButton}
+                                    >
+                                        Mark as Resolved
+                                    </button>
+                                </div>
+                                <div style={styles.cardContent}>
+                                    <div style={styles.vitalRow}>
+                                        <span style={styles.vitalLabel}>{alert.vital}</span>
+                                        <span style={styles.vitalValue}>{alert.value}</span>
                                     </div>
-                                </motion.div>
-                            ))}
-                        </AnimatePresence>
+                                </div>
+                            </div>
+                        ))}
                     </div>
-                </motion.section>
+                </section>
 
                 {/* Right Panel - Threshold Configuration (40%) */}
-                <motion.section style={styles.configPanel} variants={itemVariants}>
+                <section style={styles.configPanel}>
                     <h2 style={styles.panelTitle}>Threshold Configuration</h2>
                     <div style={styles.formContainer}>
                         <div style={styles.inputGroup}>
@@ -224,9 +211,9 @@ const AlertsManagement = ({ filter }) => {
                             Update Triggers
                         </button>
                     </div>
-                </motion.section>
+                </section>
             </div>
-        </motion.main>
+        </main>
     );
 };
 
@@ -236,29 +223,26 @@ const SegmentControl = ({ options, value, onChange }) => {
             {options.map((option) => {
                 const isActive = value === option;
                 return (
-                    <motion.div
+                    <div
                         key={option}
-                        style={segmentStyles.segment}
+                        style={{
+                            ...segmentStyles.segment,
+                            backgroundColor: isActive ? '#000' : 'transparent',
+                            borderRadius: '6px',
+                            transition: 'background-color 0.2s',
+                        }}
                         onClick={() => onChange(option)}
-                        whileTap={{ scale: 0.95 }}
                     >
-                        {isActive && (
-                            <motion.div
-                                layoutId="segmentIndicator"
-                                style={segmentStyles.indicator}
-                                transition={{ type: "spring", stiffness: 500, damping: 30 }}
-                            />
-                        )}
                         <span style={{
                             ...segmentStyles.label,
-                            color: isActive ? '#FFF' : 'var(--color-text-secondary)', // Text turns white when active
+                            color: isActive ? '#FFF' : 'var(--color-text-secondary)',
                             fontWeight: isActive ? 600 : 500,
-                            position: 'relative', // Ensure text is above indicator
+                            position: 'relative',
                             zIndex: 2
                         }}>
                             {option}
                         </span>
-                    </motion.div>
+                    </div>
                 );
             })}
         </div>
@@ -275,135 +259,91 @@ const InfoTooltip = ({ text }) => {
             onMouseLeave={() => setIsVisible(false)}
         >
             <div style={tooltipStyles.icon}>i</div>
-            <AnimatePresence>
-                {isVisible && (
-                    <motion.div
-                        initial={{ opacity: 0, y: 5 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: 5 }}
-                        style={tooltipStyles.tooltip}
-                    >
-                        {text}
-                        <div style={tooltipStyles.arrow} />
-                    </motion.div>
-                )}
-            </AnimatePresence>
+            {isVisible && (
+                <div style={tooltipStyles.tooltip}>
+                    {text}
+                    <div style={tooltipStyles.arrow} />
+                </div>
+            )}
         </div>
     );
 };
 
-// Component Styles
-const segmentStyles = {
-    container: {
-        display: 'flex',
-        backgroundColor: 'var(--color-bg-subtle)',
-        borderRadius: '8px',
-        padding: '4px',
-        position: 'relative',
-        cursor: 'pointer',
-    },
-    segment: {
-        flex: 1,
-        position: 'relative',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: '8px 4px',
-        zIndex: 1,
-    },
-    indicator: {
-        position: 'absolute',
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        backgroundColor: '#000', // Black background for active state
-        borderRadius: '6px',
-        boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-        zIndex: 1, // Below text but above segment bg
-    },
-    label: {
-        fontSize: '0.8rem',
-        zIndex: 1,
-        textAlign: 'center',
-        transition: 'color 0.2s',
-    }
-};
+// ... component styles ...
 
+// Tooltip Styles
 const tooltipStyles = {
     container: {
         position: 'relative',
+        display: 'inline-flex',
+        alignItems: 'center',
+        justifyContent: 'center',
         cursor: 'help',
-        marginLeft: '4px',
+        marginLeft: '8px',
     },
     icon: {
-        width: '16px',
-        height: '16px',
+        width: '18px',
+        height: '18px',
         borderRadius: '50%',
-        border: '1px solid var(--color-text-tertiary)',
-        color: 'var(--color-text-tertiary)',
-        fontSize: '0.7rem',
+        backgroundColor: 'var(--color-bg-subtle)',
+        border: '1px solid var(--border-color)',
+        color: 'var(--color-text-secondary)',
+        fontSize: '0.75rem',
+        fontWeight: 'bold',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        fontStyle: 'italic',
-        fontWeight: 'bold',
     },
     tooltip: {
         position: 'absolute',
         bottom: '100%',
         left: '50%',
-        transform: 'translateX(-50%)',
+        transform: 'translateX(-50%)', // Centered above
         marginBottom: '8px',
-        backgroundColor: '#000',
-        color: '#FFF',
+        backgroundColor: '#1F2937', // Gray-800
+        color: '#F9FAFB', // Gray-50
         padding: '8px 12px',
         borderRadius: '6px',
         fontSize: '0.75rem',
         width: '200px',
         textAlign: 'center',
-        zIndex: 10,
+        zIndex: 50,
+        boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
         pointerEvents: 'none',
     },
     arrow: {
         position: 'absolute',
         top: '100%',
         left: '50%',
-        transform: 'translateX(-50%)',
+        marginLeft: '-4px',
         borderWidth: '4px',
         borderStyle: 'solid',
-        borderColor: '#000 transparent transparent transparent',
+        borderColor: '#1F2937 transparent transparent transparent',
     }
 };
 
-const Switch = ({ isOn, onToggle }) => {
-    return (
-        <motion.div
-            style={{
-                ...switchStyles.container,
-                backgroundColor: isOn ? '#000' : '#FFF',
-                borderColor: isOn ? '#000' : '#E0E0E0',
-            }}
-            onClick={onToggle}
-            whileTap={{ scale: 0.95 }}
-            animate={{
-                backgroundColor: isOn ? '#000' : '#FFF',
-                borderColor: isOn ? '#000' : '#E0E0E0',
-            }}
-            transition={{ duration: 0.2 }} // 200ms fade
-        >
-            <motion.div
-                layout
-                transition={{ type: "spring", stiffness: 500, damping: 30 }}
-                style={{
-                    ...switchStyles.handle,
-                    backgroundColor: '#FFF',
-                    boxShadow: isOn ? 'none' : '0 1px 3px rgba(0,0,0,0.1)',
-                    x: isOn ? 22 : 2, // Simple x offset toggle behavior
-                }}
-            />
-        </motion.div>
-    );
+// Segment Control Styles
+const segmentStyles = {
+    container: {
+        display: 'flex',
+        backgroundColor: 'var(--color-bg-subtle)',
+        borderRadius: '8px',
+        padding: '4px',
+        gap: '4px',
+    },
+    segment: {
+        flex: 1,
+        padding: '8px 12px',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        cursor: 'pointer',
+        position: 'relative',
+    },
+    label: {
+        fontSize: '0.85rem',
+        whiteSpace: 'nowrap',
+    }
 };
 
 // Switch Styles
@@ -426,8 +366,30 @@ const switchStyles = {
         borderRadius: '50%',
         position: 'absolute',
         top: '2px',
-        // left: handled by x prop in motion.div
+        transition: 'left 0.2s',
     }
+};
+
+const Switch = ({ isOn, onToggle }) => {
+    return (
+        <div
+            style={{
+                ...switchStyles.container,
+                backgroundColor: isOn ? '#000' : '#FFF',
+                borderColor: isOn ? '#000' : '#E0E0E0',
+            }}
+            onClick={onToggle}
+        >
+            <div
+                style={{
+                    ...switchStyles.handle,
+                    backgroundColor: '#FFF',
+                    boxShadow: isOn ? 'none' : '0 1px 3px rgba(0,0,0,0.1)',
+                    left: isOn ? '22px' : '2px',
+                }}
+            />
+        </div>
+    );
 };
 
 const NumberStepper = ({ value, onChange, label, step = 1, min, max }) => {
